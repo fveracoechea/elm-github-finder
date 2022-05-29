@@ -19,7 +19,7 @@ headerView _ =
                         [ input
                             [ attribute "aria-label" "Search"
                             , class "form-control me-2"
-                            , placeholder "Search for username"
+                            , placeholder "Type a username..."
                             , type_ "search"
                             , onInput SetQuery
                             ]
