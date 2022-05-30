@@ -1,8 +1,9 @@
-module Layout exposing (headerView)
+module Layout exposing (contentView, headerView)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Page.Profile as ProfilePage
 import Types exposing (..)
 
 
@@ -29,5 +30,14 @@ headerView _ =
                         ]
                     ]
                 ]
+            ]
+        ]
+
+
+contentView : Model -> Html Msg
+contentView model =
+    div [ style "min-height" "100vh", style "background-color" "#f2f2f2" ]
+        [ main_ [ class "container" ]
+            [ ProfilePage.view model.profile
             ]
         ]
