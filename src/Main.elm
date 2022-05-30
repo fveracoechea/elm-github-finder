@@ -6,8 +6,7 @@ import Browser.Navigation as Navigation exposing (Key)
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Json.Decode as D
-import Layout exposing (headerView)
-import Page.Home as Homepage
+import Layout exposing (contentView, headerView)
 import Types exposing (..)
 import Url exposing (Url)
 import Url.Parser as Parser exposing ((</>))
@@ -65,8 +64,20 @@ init flags _ key =
                             Err _ ->
                                 emptyModel
                     )
+
+        maybeCmd =
+            maybeModel
+                |> Maybe.map
+                    (\newModel ->
+                        case newModel.profile of
+                            Fullfilled data ->
+                                Api.fetchRepos data.login
+
+                            _ ->
+                                Cmd.none
+                    )
     in
-    ( Maybe.withDefault emptyModel maybeModel, Cmd.none )
+    ( Maybe.withDefault emptyModel maybeModel, Maybe.withDefault Cmd.none maybeCmd )
 
 
 
@@ -83,7 +94,7 @@ update msg model =
                         Cmd.none
 
                     else
-                        Api.fetchUserInfo model.query
+                        Api.fetchProfile model.query
             in
             ( model, command )
 
@@ -91,19 +102,27 @@ update msg model =
             ( { model | query = newQuery }, Cmd.none )
 
         SearchProfile query ->
-            ( model, Api.fetchUserInfo query )
+            ( model, Api.fetchProfile query )
 
         SendUserToExternalUrl url ->
             ( model, Navigation.load url )
 
+        GotRepositories result ->
+            let
+                _ =
+                    Debug.log "GotRepositories" result
+            in
+            ( model, Cmd.none )
+
         GotProfile result ->
             case result of
                 Ok data ->
-                    let
-                        _ =
-                            Debug.log "GotProfile OK" data
-                    in
-                    ( { model | profile = Fullfilled data }, sendProfileToStorage data )
+                    ( { model | profile = Fullfilled data }
+                    , Cmd.batch
+                        [ sendProfileToStorage data
+                        , Api.fetchRepos data.login
+                        ]
+                    )
 
                 Err _ ->
                     ( model, Cmd.none )
@@ -121,9 +140,7 @@ view model =
     { title = "Github Finder"
     , body =
         [ headerView model
-        , main_ [ class "container" ]
-            [ Homepage.view model.profile
-            ]
+        , contentView model
         ]
     }
 
