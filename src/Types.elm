@@ -20,6 +20,21 @@ type alias Profile =
     }
 
 
+type alias Repository =
+    { id : Int
+    , name : String
+    , full_name : String
+    , html_url : String
+    , description : Maybe String
+    , fork : Bool
+    , language : Maybe String
+    , forks : Int
+    , watchers : Int
+    , topics : List String
+    , readme : Maybe String
+    }
+
+
 type Token
     = Token String
 
@@ -43,4 +58,5 @@ type Msg
     | SetQuery String
     | SearchProfile String
     | GotProfile (Result Http.Error Profile)
+    | GotRepositories (Result Http.Error (List Repository))
     | SendUserToExternalUrl String
