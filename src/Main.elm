@@ -4,7 +4,7 @@ import Browser exposing (Document, UrlRequest(..))
 import Browser.Navigation as Navigation exposing (Key)
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Layout exposing (headerView)
+import Layout
 import Page.Home as HomePage
 import Page.ProfileDetail as ProfileDetailPage
 import Routing exposing (Route(..), parseUrlToRoute)
@@ -121,8 +121,8 @@ view : Model -> Document Msg
 view model =
     { title = "Github Finder"
     , body =
-        [ headerView ()
-        , div [ style "min-height" "100vh", style "background-color" "#f2f2f2" ]
+        [ Layout.headerView ()
+        , div [ style "min-height" "60vh", style "background-color" "#f2f2f2" ]
             [ main_ [ class "container" ]
                 [ case model of
                     ProfileDetail subModel ->
@@ -132,6 +132,7 @@ view model =
                         HomePage.view ()
                 ]
             ]
+        , Layout.footerView ()
         ]
     }
 
