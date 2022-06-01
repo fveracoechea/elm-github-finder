@@ -8,9 +8,9 @@ const app = Elm.Main.init({
     },
 });
 
-app.ports.sendProfileToStorage.subscribe((profile) => {
-    localStorage.setItem("__APP_PROFILE__", JSON.stringify(profile));
-});
+// app.ports.sendProfileToStorage.subscribe((profile) => {
+//     localStorage.setItem("__APP_PROFILE__", JSON.stringify(profile));
+// });
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.

@@ -1,43 +1,40 @@
-module Layout exposing (contentView, headerView)
+module Layout exposing (headerView)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Page.Profile as ProfilePage
-import Types exposing (..)
+import Routing
 
 
-headerView : Model -> Html Msg
+headerView : () -> Html msg
 headerView _ =
     header []
         [ nav [ class "navbar navbar-expand-lg navbar-dark bg-dark" ]
             [ div [ class "container" ]
-                [ a [ class "navbar-brand", href "#" ]
-                    [ text "Github Finder" ]
-                , div [ id "navbarSupportedContent" ]
-                    [ div [ class "navbar-nav me-auto my-2 my-lg-0 navbar-nav-scroll" ] []
-                    , Html.form [ class "d-flex", attribute "role" "search", onSubmit OnSearch ]
-                        [ input
-                            [ attribute "aria-label" "Search"
-                            , class "form-control me-2"
-                            , placeholder "Type a username..."
-                            , type_ "search"
-                            , onInput SetQuery
-                            ]
-                            []
-                        , button [ class "btn btn-primary", type_ "submit" ]
-                            [ text "Search" ]
+                [ a [ class "navbar-brand", href "/" ]
+                    [ i [ class "bi bi-github", style "margin-right" "10px", style "font-size" "1.43rem" ]
+                        []
+                    , text "Github Finder"
+                    ]
+                , button [ class "navbar-toggler", type_ "button" ] [ span [ class "navbar-toggler-icon" ] [] ]
+                , ul [ class "collapse navbar-collapse navbar-nav justify-content-end" ]
+                    [ li [ class "nav-item" ]
+                        [ a [ attribute "aria-current" "page", class "nav-link active", Routing.href Routing.Home ]
+                            [ text "Home" ]
+                        ]
+                    , li [ class "nav-item" ]
+                        [ a [ class "nav-link", href "#" ]
+                            [ text "Favorites" ]
+                        ]
+                    , li [ class "nav-item" ]
+                        [ a [ class "nav-link", Routing.href (Routing.ProfileDetail "test") ]
+                            [ text "Profiles" ]
+                        ]
+                    , li [ class "nav-item" ]
+                        [ a [ class "nav-link", href "#" ]
+                            [ text "Repositories" ]
                         ]
                     ]
                 ]
-            ]
-        ]
-
-
-contentView : Model -> Html Msg
-contentView model =
-    div [ style "min-height" "100vh", style "background-color" "#f2f2f2" ]
-        [ main_ [ class "container" ]
-            [ ProfilePage.view model.profile
             ]
         ]

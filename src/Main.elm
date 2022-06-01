@@ -1,19 +1,34 @@
-port module Main exposing (main)
+module Main exposing (main)
 
-import Api
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Navigation as Navigation exposing (Key)
 import Html exposing (..)
-import Html.Attributes exposing (class)
-import Json.Decode as D
-import Layout exposing (contentView, headerView)
-import Types exposing (..)
+import Html.Attributes exposing (..)
+import Layout exposing (headerView)
+import Page.Home as HomePage
+import Page.ProfileDetail as ProfileDetailPage
+import Routing exposing (Route(..), parseUrlToRoute)
 import Url exposing (Url)
-import Url.Parser as Parser exposing ((</>))
 
 
 
 -- MODEL
+
+
+type Msg
+    = Noop
+    | OnSearch
+    | SetQuery String
+    | SendUserToExternalUrl String
+    | UrlChanged Url
+    | UrlChangeRequested Url
+    | GotProfileDetailPageMsg ProfileDetailPage.Msg
+    | GotHomePageMsg
+
+
+type Model
+    = Home HomePage.Model
+    | ProfileDetail ProfileDetailPage.Model
 
 
 type alias Flags =
@@ -21,113 +36,80 @@ type alias Flags =
     }
 
 
+initWith : (subModel -> Model) -> (subMsg -> Msg) -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
+initWith toModel toMsg ( subModel, subCmd ) =
+    ( toModel subModel
+    , Cmd.map toMsg subCmd
+    )
 
--- ROUTE
--- type Route
---     = Query String
---     | NotFound
--- routeParser : Parser.Parser (Route -> a) a
--- routeParser =
---     Parser.oneOf
---         [ Parser.map Query (Parser.s "query" </> Parser.string)
---         ]
--- INIT
+
+getKeyFromModel : Model -> Key
+getKeyFromModel model =
+    case model of
+        Home subModel ->
+            HomePage.toNavKey subModel
+
+        ProfileDetail subModel ->
+            ProfileDetailPage.toNavKey subModel
 
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
-init flags _ key =
-    let
-        -- parserdUrl =
-        --     Maybe.withDefault NotFound (Parser.parse routeParser url)
-        emptyModel =
-            { navKey = key
-            , query = ""
-            , profile = Unknown
-            }
+init _ url key =
+    case parseUrlToRoute url of
+        Routing.ProfileDetail username ->
+            ProfileDetailPage.init username key
+                |> initWith ProfileDetail GotProfileDetailPageMsg
 
-        maybeModel =
-            flags.storedProfile
-                |> Maybe.map (D.decodeString Api.profileDecoder)
-                |> Maybe.map
-                    (\result ->
-                        let
-                            _ =
-                                Debug.log "stored profile" result
-                        in
-                        case result of
-                            Ok data ->
-                                { navKey = key
-                                , query = ""
-                                , profile = Fullfilled data
-                                }
-
-                            Err _ ->
-                                emptyModel
-                    )
-
-        maybeCmd =
-            maybeModel
-                |> Maybe.map
-                    (\newModel ->
-                        case newModel.profile of
-                            Fullfilled data ->
-                                Api.fetchRepos data.login
-
-                            _ ->
-                                Cmd.none
-                    )
-    in
-    ( Maybe.withDefault emptyModel maybeModel, Maybe.withDefault Cmd.none maybeCmd )
+        -- ProfileDetailPage.init username url key
+        Routing.Home ->
+            HomePage.init key
+                |> initWith Home (\_ -> GotHomePageMsg)
 
 
 
 -- UPDATE
 
 
+changeRoute : Route -> Model -> ( Model, Cmd Msg )
+changeRoute route model =
+    let
+        key =
+            getKeyFromModel model
+    in
+    case route of
+        Routing.ProfileDetail username ->
+            ProfileDetailPage.init username key
+                |> initWith ProfileDetail GotProfileDetailPageMsg
+
+        Routing.Home ->
+            HomePage.init key
+                |> initWith Home (\_ -> GotHomePageMsg)
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        OnSearch ->
-            let
-                command =
-                    if String.isEmpty model.query || String.length model.query < 3 then
-                        Cmd.none
-
-                    else
-                        Api.fetchProfile model.query
-            in
-            ( model, command )
-
-        SetQuery newQuery ->
-            ( { model | query = newQuery }, Cmd.none )
-
-        SearchProfile query ->
-            ( model, Api.fetchProfile query )
-
+        -- OnSearch ->
+        --     let
+        --         command =
+        --             if String.isEmpty model.query || String.length model.query < 3 then
+        --                 Cmd.none
+        --             else
+        --                 Api.fetchProfile model.query
+        --     in
+        --     ( model, command )
+        -- SetQuery newQuery ->
+        --     ( { model | query = newQuery }, Cmd.none )
         SendUserToExternalUrl url ->
             ( model, Navigation.load url )
 
-        GotRepositories result ->
-            let
-                _ =
-                    Debug.log "GotRepositories" result
-            in
-            ( model, Cmd.none )
+        UrlChangeRequested url ->
+            ( model, Navigation.pushUrl (getKeyFromModel model) (Url.toString url) )
 
-        GotProfile result ->
-            case result of
-                Ok data ->
-                    ( { model | profile = Fullfilled data }
-                    , Cmd.batch
-                        [ sendProfileToStorage data
-                        , Api.fetchRepos data.login
-                        ]
-                    )
+        UrlChanged url ->
+            changeRoute (parseUrlToRoute url) model
 
-                Err _ ->
-                    ( model, Cmd.none )
-
-        Noop ->
+        _ ->
             ( model, Cmd.none )
 
 
@@ -139,8 +121,17 @@ view : Model -> Document Msg
 view model =
     { title = "Github Finder"
     , body =
-        [ headerView model
-        , contentView model
+        [ headerView ()
+        , div [ style "min-height" "100vh", style "background-color" "#f2f2f2" ]
+            [ main_ [ class "container" ]
+                [ case model of
+                    ProfileDetail subModel ->
+                        ProfileDetailPage.view subModel.profile
+
+                    Home _ ->
+                        HomePage.view ()
+                ]
+            ]
         ]
     }
 
@@ -155,17 +146,8 @@ onUrlRequest urlRequest =
         External externalUrl ->
             SendUserToExternalUrl externalUrl
 
-        Internal _ ->
-            Noop
-
-
-
--- onUrlChange
-
-
-onUrlChange : Url -> Msg
-onUrlChange _ =
-    Noop
+        Internal url ->
+            UrlChangeRequested url
 
 
 
@@ -180,12 +162,5 @@ main =
         , update = update
         , subscriptions = \_ -> Sub.none
         , onUrlRequest = onUrlRequest
-        , onUrlChange = onUrlChange
+        , onUrlChange = UrlChanged
         }
-
-
-
--- PORTS
-
-
-port sendProfileToStorage : Profile -> Cmd msg

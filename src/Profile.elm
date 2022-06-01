@@ -1,18 +1,50 @@
-module Api exposing (..)
+module Profile exposing (Profile, Repository, profileDecoder, repositoriesDecoder, repositoryDecoder)
 
-import Http
 import Json.Decode as D exposing (Decoder)
-import Types exposing (..)
-import Url exposing (Protocol(..))
 
 
 
--- HELPERS
+-- TYPES
 
 
-getUserEndpoint : String -> String
-getUserEndpoint username =
-    "https://api.github.com/users/" ++ username
+type alias Profile =
+    { id : Int
+    , login : String
+    , name : Maybe String
+    , avatar_url : String
+    , html_url : String
+    , bio : Maybe String
+    , location : Maybe String
+    , email : Maybe String
+    , blog : Maybe String
+    , followers : Int
+    , following : Int
+    , public_repos : Int
+    , public_gists : Int
+    , repos : Maybe (List Repository)
+    }
+
+
+type alias Repository =
+    { id : Int
+    , name : String
+    , full_name : String
+    , html_url : String
+    , description : Maybe String
+    , fork : Bool
+    , language : Maybe String
+    , forks : Int
+    , watchers : Int
+    , topics : List String
+    , created_at : String
+    , svn_url : String
+    , readme : Maybe String
+    }
+
+
+
+-- INTERNALS
+{- Pipeline helper for decoders -}
 
 
 andMap : Decoder a -> Decoder (a -> b) -> Decoder b
@@ -47,6 +79,10 @@ optional fieldName decoder =
     andMap (D.maybe (D.field fieldName decoder))
 
 
+
+-- DECODERS
+
+
 profileDecoder : D.Decoder Profile
 profileDecoder =
     D.succeed Profile
@@ -56,12 +92,14 @@ profileDecoder =
         |> required "avatar_url" D.string
         |> required "html_url" D.string
         |> nullable "bio" D.string
-        |> required "location" D.string
+        |> nullable "location" D.string
         |> nullable "email" D.string
-        |> required "public_repos" D.int
         |> nullable "blog" D.string
         |> required "followers" D.int
         |> required "following" D.int
+        |> required "public_repos" D.int
+        |> required "public_gists" D.int
+        |> optional "readme" (D.list repositoryDecoder)
 
 
 repositoryDecoder : D.Decoder Repository
@@ -77,25 +115,11 @@ repositoryDecoder =
         |> required "forks" D.int
         |> required "watchers" D.int
         |> required "topics" (D.list D.string)
+        |> required "created_at" D.string
+        |> required "svn_url" D.string
         |> optional "readme" D.string
 
 
 repositoriesDecoder : D.Decoder (List Repository)
 repositoriesDecoder =
     D.list repositoryDecoder
-
-
-fetchRepos : String -> Cmd Msg
-fetchRepos username =
-    Http.get
-        { url = getUserEndpoint username ++ "/repos"
-        , expect = Http.expectJson GotRepositories (D.list repositoryDecoder)
-        }
-
-
-fetchProfile : String -> Cmd Msg
-fetchProfile query =
-    Http.get
-        { url = getUserEndpoint query
-        , expect = Http.expectJson GotProfile profileDecoder
-        }
