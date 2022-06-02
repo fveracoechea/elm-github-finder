@@ -279,7 +279,7 @@ renderBreadcrumbs profile =
     nav [ attribute "aria-label" "breadcrumb" ]
         [ ol [ class "breadcrumb" ]
             [ li [ class "breadcrumb-item" ]
-                [ text "Home"
+                [ a [ Routing.href Routing.Home ] [ text "Home" ]
                 ]
             , li [ class "breadcrumb-item" ]
                 [ text "Profile"
