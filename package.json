@@ -1,0 +1,17 @@
+{
+    "name": "elm-github-finder",
+    "version": "1.0.0",
+    "description": "Where the world searches software",
+    "main": "src/index.js",
+    "repository": "git@github.com:fveracoechea/elm-github-finder.git",
+    "author": "Francisco V <veracoecheafrancisco@gmail.com>",
+    "license": "MIT",
+    "private": false,
+    "dependencies": {
+        "create-elm-app": "^5.22.0"
+    },
+    "scripts": {
+        "dev": "elm-app start",
+        "build": "elm-app build"
+    }
+}
