@@ -1,13 +1,15 @@
-module Page.ProfileDetail exposing (Model, Msg(..), fetchProfile, fetchRepos, init, toNavKey, update, view)
+module Page.ProfileDetail exposing (Model, Msg(..), fetchProfile, init, toNavKey, update, view)
 
+import Api
 import Browser.Navigation exposing (Key)
 import Date
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Http
 import Json.Decode as D
-import Profile exposing (Profile, Repository, profileDecoder, repositoryDecoder)
+import Profile as Profile exposing (Profile, Repository, profileDecoder, repositoryDecoder)
 import Routing exposing (Route(..))
+import Task exposing (Task)
 import Time
 
 
@@ -19,12 +21,12 @@ type Msg
     = Noop
     | SearchProfile String
     | GotProfile (Result Http.Error Profile)
-    | GotRepositories (Result Http.Error (List Repository))
 
 
 type ProfileState
     = Loading String
     | Fullfilled Profile
+    | Failed Http.Error
 
 
 type alias Model =
@@ -37,25 +39,28 @@ type alias Model =
 -- HTTP REQUEST
 
 
-getUserEndpoint : String -> String
-getUserEndpoint username =
-    "https://api.github.com/users/" ++ username
-
-
-fetchRepos : String -> Cmd Msg
-fetchRepos username =
-    Http.get
-        { url = getUserEndpoint username ++ "/repos"
-        , expect = Http.expectJson GotRepositories (D.list repositoryDecoder)
+attachProfileRepos : Profile -> Task Http.Error Profile
+attachProfileRepos profile =
+    Api.fetch
+        { endpoint = Api.Endpoint ("/users/" ++ profile.login ++ "/repos")
+        , decoder = D.list repositoryDecoder
+        , body = Nothing
+        , headers = Nothing
+        , method = Api.methods.get
         }
+        |> Task.map (Profile.addRepos profile)
 
 
-fetchProfile : String -> Cmd Msg
-fetchProfile query =
-    Http.get
-        { url = getUserEndpoint query
-        , expect = Http.expectJson GotProfile profileDecoder
+fetchProfile : String -> Task Http.Error Profile
+fetchProfile username =
+    Api.fetch
+        { endpoint = Api.Endpoint ("/users/" ++ username)
+        , decoder = profileDecoder
+        , body = Nothing
+        , headers = Nothing
+        , method = Api.methods.get
         }
+        |> Task.andThen attachProfileRepos
 
 
 
@@ -71,7 +76,7 @@ init username key =
             , profile = Loading username
             }
     in
-    ( model, fetchRepos username )
+    ( model, Task.attempt GotProfile (fetchProfile username) )
 
 
 
@@ -285,6 +290,47 @@ renderBreadcrumbs profile =
         ]
 
 
+renderPlaceholder : () -> Html msg
+renderPlaceholder _ =
+    div [ class "placeholder-glow" ]
+        [ div [ class "row" ]
+            [ p [] [ span [ class "placeholder col-4 rounded-1" ] [] ]
+            ]
+        , div [ class "p-3 mb-4 bg-dark rounded-3 text-white" ]
+            [ div [ class "row" ]
+                [ div [ class "col-sm-4" ]
+                    [ div [ class "placeholder bg-light w-100 rounded-1", style "padding-bottom" "100%" ] []
+                    ]
+                , div [ class "col-sm-8 d-flex flex-column justify-content-between" ]
+                    [ div []
+                        [ h1 [ class "display-6  mb-4 mt-2" ] [ span [ class "placeholder col-8 rounded-1" ] [] ]
+                        , p [] [ span [ class "placeholder col-6 rounded-1" ] [] ]
+                        , p [] [ span [ class "placeholder col-4 rounded-1" ] [] ]
+                        , p [] [ span [ class "placeholder col-5 rounded-1" ] [] ]
+                        ]
+                    , div [ class "d-flex justify-content-between flex-wrap w-100" ]
+                        [ div [ class "d-block placeholder rounded-1 bg-light", style "width" "30%" ] []
+                        , div [ class "d-block placeholder rounded-1 bg-light", style "width" "20%" ] []
+                        ]
+                    ]
+                ]
+            ]
+        , div
+            [ class "row" ]
+            [ div [ class "col-6 pt-4" ]
+                [ h3 [] [ span [ class "placeholder col-8 rounded-1" ] [] ]
+                , p [] [ span [ class "placeholder col-12 rounded-1" ] [] ]
+                , p [] [ span [ class "placeholder col-12 rounded-1" ] [] ]
+                ]
+            , div [ class "col-6 pt-4" ]
+                [ h3 [] [ span [ class "placeholder col-8 rounded-1" ] [] ]
+                , p [] [ span [ class "placeholder col-12 rounded-1" ] [] ]
+                , p [] [ span [ class "placeholder col-12 rounded-1" ] [] ]
+                ]
+            ]
+        ]
+
+
 view : ProfileState -> Html msg
 view state =
     let
@@ -297,8 +343,30 @@ view state =
                     , renderProfileRepos profile
                     ]
 
+                Loading _ ->
+                    [ renderPlaceholder () ]
+
                 _ ->
-                    [ div [] [ h4 [ class "text-muted" ] [ text "Search for a github profile" ] ]
+                    [ nav [ attribute "aria-label" "breadcrumb" ]
+                        [ ol [ class "breadcrumb" ]
+                            [ li [ class "breadcrumb-item" ]
+                                [ text "Home"
+                                ]
+                            , li [ class "breadcrumb-item" ]
+                                [ text "Profile"
+                                ]
+                            , li [ attribute "aria-current" "page", class "breadcrumb-item active" ]
+                                [ text "Unknown" ]
+                            ]
+                        ]
+                    , div [ class "alert alert-danger", attribute "role" "alert" ]
+                        [ div [ class "d-flex align-items-center" ]
+                            [ i [ class "fs-4 d-inline-block pe-2 bi bi-exclamation-circle-fill" ] []
+                            , text "Github user not found."
+                            ]
+                        ]
+                    , div [ class "w-100 d-flex justify-content-center p-4" ]
+                        [ i [ class "text-danger bi bi-github", style "font-size" "12rem" ] [] ]
                     ]
     in
     div [ class "pt-3" ] content
@@ -311,31 +379,17 @@ view state =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotRepositories result ->
-            ( case result of
-                Ok repos ->
-                    { model
-                        | profile =
-                            case model.profile of
-                                Fullfilled profile ->
-                                    Fullfilled { profile | repos = Just repos }
-
-                                Loading username ->
-                                    Loading username
-                    }
-
-                Err _ ->
-                    model
-            , Cmd.none
-            )
-
         GotProfile result ->
             case result of
                 Ok data ->
-                    ( model, fetchRepos data.login )
+                    ( { model | profile = Fullfilled data }, Cmd.none )
 
-                Err _ ->
-                    ( model, Cmd.none )
+                Err error ->
+                    let
+                        _ =
+                            Debug.log "Error loading profile" error
+                    in
+                    ( { model | profile = Failed error }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )

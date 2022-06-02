@@ -36,8 +36,8 @@ type alias Flags =
     }
 
 
-initWith : (subModel -> Model) -> (subMsg -> Msg) -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
-initWith toModel toMsg ( subModel, subCmd ) =
+updateWith : (subModel -> Model) -> (subMsg -> Msg) -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
+updateWith toModel toMsg ( subModel, subCmd ) =
     ( toModel subModel
     , Cmd.map toMsg subCmd
     )
@@ -58,12 +58,11 @@ init _ url key =
     case parseUrlToRoute url of
         Routing.ProfileDetail username ->
             ProfileDetailPage.init username key
-                |> initWith ProfileDetail GotProfileDetailPageMsg
+                |> updateWith ProfileDetail GotProfileDetailPageMsg
 
-        -- ProfileDetailPage.init username url key
         Routing.Home ->
             HomePage.init key
-                |> initWith Home (\_ -> GotHomePageMsg)
+                |> updateWith Home (\_ -> GotHomePageMsg)
 
 
 
@@ -79,16 +78,16 @@ changeRoute route model =
     case route of
         Routing.ProfileDetail username ->
             ProfileDetailPage.init username key
-                |> initWith ProfileDetail GotProfileDetailPageMsg
+                |> updateWith ProfileDetail GotProfileDetailPageMsg
 
         Routing.Home ->
             HomePage.init key
-                |> initWith Home (\_ -> GotHomePageMsg)
+                |> updateWith Home (\_ -> GotHomePageMsg)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
+    case ( msg, model ) of
         -- OnSearch ->
         --     let
         --         command =
@@ -100,14 +99,18 @@ update msg model =
         --     ( model, command )
         -- SetQuery newQuery ->
         --     ( { model | query = newQuery }, Cmd.none )
-        SendUserToExternalUrl url ->
+        ( SendUserToExternalUrl url, _ ) ->
             ( model, Navigation.load url )
 
-        UrlChangeRequested url ->
+        ( UrlChangeRequested url, _ ) ->
             ( model, Navigation.pushUrl (getKeyFromModel model) (Url.toString url) )
 
-        UrlChanged url ->
+        ( UrlChanged url, _ ) ->
             changeRoute (parseUrlToRoute url) model
+
+        ( GotProfileDetailPageMsg subMsg, ProfileDetail subModel ) ->
+            ProfileDetailPage.update subMsg subModel
+                |> updateWith ProfileDetail GotProfileDetailPageMsg
 
         _ ->
             ( model, Cmd.none )
@@ -122,7 +125,7 @@ view model =
     { title = "Github Finder"
     , body =
         [ Layout.headerView ()
-        , div [ style "min-height" "60vh", style "background-color" "#f2f2f2" ]
+        , div [ style "min-height" "50vh", style "background-color" "#f2f2f2" ]
             [ main_ [ class "container" ]
                 [ case model of
                     ProfileDetail subModel ->

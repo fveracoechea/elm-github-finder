@@ -1,4 +1,4 @@
-module Profile exposing (Profile, Repository, profileDecoder, repositoriesDecoder, repositoryDecoder)
+module Profile exposing (Profile, Repository, addRepos, profileDecoder, repositoriesDecoder, repositoryDecoder)
 
 import Json.Decode as D exposing (Decoder)
 
@@ -123,3 +123,13 @@ repositoryDecoder =
 repositoriesDecoder : D.Decoder (List Repository)
 repositoriesDecoder =
     D.list repositoryDecoder
+
+
+
+-- HELPERS
+{- Adds repos to profile. -}
+
+
+addRepos : Profile -> List Repository -> Profile
+addRepos profile repos =
+    { profile | repos = Just repos }
