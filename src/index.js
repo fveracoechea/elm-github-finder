@@ -1,6 +1,8 @@
 import { Elm } from "./Main.elm";
 import * as serviceWorker from "./serviceWorker";
 
+import "./styles/homepage.css";
+
 const app = Elm.Main.init({
     node: document.getElementById("root"),
     flags: {

@@ -125,15 +125,15 @@ view model =
     { title = "Github Finder"
     , body =
         [ Layout.headerView ()
-        , div [ style "min-height" "50vh", style "background-color" "#f2f2f2" ]
-            [ main_ [ class "container" ]
-                [ case model of
-                    ProfileDetail subModel ->
-                        ProfileDetailPage.view subModel.profile
+        , div [ style "min-height" "20vh", style "background-color" "#f2f2f2" ]
+            [ case model of
+                ProfileDetail subModel ->
+                    main_ [ class "container" ]
+                        [ ProfileDetailPage.view subModel.profile ]
 
-                    Home _ ->
-                        HomePage.view ()
-                ]
+                Home _ ->
+                    main_ [ class "container-fluid p-0" ]
+                        [ HomePage.view () ]
             ]
         , Layout.footerView ()
         ]

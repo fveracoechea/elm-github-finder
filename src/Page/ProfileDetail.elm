@@ -385,10 +385,6 @@ update msg model =
                     ( { model | profile = Fullfilled data }, Cmd.none )
 
                 Err error ->
-                    let
-                        _ =
-                            Debug.log "Error loading profile" error
-                    in
                     ( { model | profile = Failed error }, Cmd.none )
 
         _ ->
