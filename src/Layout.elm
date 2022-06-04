@@ -1,38 +1,170 @@
-module Layout exposing (footerView, headerView)
+module Layout exposing (Model, Msg(..), footer, header, init, initialModel, subscriptions, update)
 
+import Browser.Dom as Dom
+import Browser.Events exposing (onAnimationFrame, onResize)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Routing
+import Task
 
 
-headerView : () -> Html msg
-headerView _ =
-    header []
+
+-- Msg
+
+
+type Msg
+    = MobileNavToggled
+    | WindowResized Int
+    | GotAnimationFrame
+
+
+
+-- MODEL
+
+
+navID : String
+navID =
+    "header-navigation"
+
+
+type alias NavigationHeight =
+    { initial : Int
+    , current : Int
+    }
+
+
+initialModel : Model
+initialModel =
+    { isMobile = True
+    , isNavOpen = False
+    , navigation =
+        { initial = 140
+        , current = 0
+        }
+    }
+
+
+type alias Model =
+    { isMobile : Bool
+    , isNavOpen : Bool
+    , navigation : NavigationHeight
+    }
+
+
+
+-- INIT
+
+
+init : () -> Cmd Msg
+init _ =
+    Cmd.none
+
+
+
+-- UPDATE
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        WindowResized width ->
+            ( { model | isMobile = width <= 991 }
+            , Cmd.none
+            )
+
+        MobileNavToggled ->
+            let
+                r =
+                    if model.isMobile then
+                        ( { model | isNavOpen = not model.isNavOpen }, Cmd.none )
+
+                    else
+                        ( model, Cmd.none )
+            in
+            Debug.log "MobileNavToggled" r
+
+        GotAnimationFrame ->
+            let
+                current =
+                    model.navigation.current
+
+                initial =
+                    model.navigation.initial
+            in
+            if model.isMobile && not model.isNavOpen && current > 0 then
+                let
+                    nav =
+                        { initial = initial
+                        , current = current - 6
+                        }
+                in
+                ( { model | navigation = nav }, Cmd.none )
+
+            else if model.isMobile && model.isNavOpen && current < initial then
+                let
+                    nav =
+                        { initial = initial
+                        , current = current + 6
+                        }
+                in
+                ( { model | navigation = nav }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
+
+
+
+-- VIEW
+
+
+getNavHeight : Model -> Attribute msg
+getNavHeight model =
+    if model.isMobile then
+        style "height" (String.fromInt model.navigation.current ++ "px")
+
+    else
+        style "height" "auto"
+
+
+header : toggleMsg -> Model -> Html toggleMsg
+header toggleMsg model =
+    Html.header []
         [ nav [ class "navbar navbar-expand-lg navbar-dark bg-dark" ]
             [ div [ class "container" ]
-                [ a [ class "navbar-brand", href "/" ]
+                [ a [ onClick toggleMsg, class "navbar-brand", Routing.href Routing.Home ]
                     [ i [ class "bi bi-github", style "margin-right" "10px", style "font-size" "1.43rem" ]
                         []
                     , text "Github Finder"
                     ]
-                , button [ class "navbar-toggler", type_ "button" ] [ span [ class "navbar-toggler-icon" ] [] ]
-                , ul [ class "collapse navbar-collapse navbar-nav justify-content-end" ]
-                    [ li [ class "nav-item" ]
-                        [ a [ attribute "aria-current" "page", class "nav-link active", Routing.href Routing.Home ]
-                            [ text "Home" ]
+                , button [ onClick toggleMsg, class "navbar-toggler", type_ "button" ] [ span [ class "navbar-toggler-icon" ] [] ]
+                , div [ class "collapse navbar-collapse justify-content-between", id navID, getNavHeight model ]
+                    [ ul [ class "navbar-nav" ]
+                        [ li [ class "nav-item" ]
+                            [ a [ onClick toggleMsg, class "nav-link", Routing.href Routing.Search ]
+                                [ i [ class "bi bi-search me-2" ] []
+                                , text "Search"
+                                ]
+                            ]
+                        , li [ class "nav-item" ]
+                            [ a [ onClick toggleMsg, class "nav-link", Routing.href Routing.Favorites ]
+                                [ i [ class "bi bi-heart-fill me-2" ] [], text "Favorites" ]
+                            ]
                         ]
-                    , li [ class "nav-item" ]
-                        [ a [ class "nav-link", href "#" ]
-                            [ text "Favorites" ]
-                        ]
-                    , li [ class "nav-item" ]
-                        [ a [ class "nav-link", Routing.href (Routing.ProfileDetail "test") ]
-                            [ text "Profiles" ]
-                        ]
-                    , li [ class "nav-item" ]
-                        [ a [ class "nav-link", href "#" ]
-                            [ text "Repositories" ]
+                    , Html.form [ class "d-flex", attribute "role" "search" ]
+                        [ input
+                            [ class "form-control me-2"
+                            , placeholder "What are you looking for?"
+                            , attribute "aria-label" "Search"
+                            , style "min-width" "221px"
+                            ]
+                            []
+                        , button
+                            [ class "btn btn-outline-primary"
+                            , type_ "submit"
+                            , attribute "aria-label" "submit search"
+                            ]
+                            [ text "Search" ]
                         ]
                     ]
                 ]
@@ -40,9 +172,9 @@ headerView _ =
         ]
 
 
-footerView : () -> Html msg
-footerView _ =
-    footer [ class "page-footer font-small indigo" ]
+footer : () -> Html msg
+footer _ =
+    Html.footer [ class "page-footer font-small indigo" ]
         [ div [ class "container" ]
             [ div [ class "row d-flex text-center justify-content-center mb-md-0 mb-4" ]
                 [ div [ class "col-md-8 col-12 mt-5" ]
@@ -96,3 +228,33 @@ footerView _ =
             [ text "© 2020 Copyright - Francisco Veracoechea"
             ]
         ]
+
+
+
+-- SUB
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    let
+        resizeSub =
+            onResize (\w _ -> WindowResized w)
+
+        current =
+            model.navigation.current
+
+        initial =
+            model.navigation.initial
+
+        animationSub =
+            if model.isMobile then
+                if not model.isNavOpen && current > 0 || model.isNavOpen && current < initial then
+                    onAnimationFrame (\_ -> GotAnimationFrame)
+
+                else
+                    Sub.none
+
+            else
+                Sub.none
+    in
+    Sub.batch [ resizeSub, animationSub ]
