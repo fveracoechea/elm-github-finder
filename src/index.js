@@ -1,7 +1,6 @@
 import { Elm } from "./Main.elm";
 
-import "../styles/homepage.css";
-import "../styles/layout.css";
+import "../styles/css/styles.css";
 
 const app = Elm.Main.init({
     node: document.getElementById("root"),

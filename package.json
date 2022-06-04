@@ -8,10 +8,14 @@
     "license": "MIT",
     "private": false,
     "dependencies": {
-        "create-elm-app": "^5.22.0"
+        "bootstrap": "5.2.0-beta1",
+        "create-elm-app": "^5.22.0",
+        "sass": "^1.52.2"
     },
     "scripts": {
-        "dev": "elm-app start",
-        "build": "elm-app build"
+        "dev": "yarn dev-css & elm-app start",
+        "build": "yarn css && elm-app build",
+        "css": "sass styles/sass:styles/css",
+        "dev-css": "sass styles/sass:styles/css --watch"
     }
 }

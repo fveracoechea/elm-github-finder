@@ -211,7 +211,7 @@ footer _ =
                     ]
                 ]
             ]
-        , div [ class "footer-copyright text-center py-3" ]
+        , div [ class "footer-copyright text-center p-3" ]
             [ p []
                 [ text "This project is bootstrapped with "
                 , a [ href "https://github.com/halfzebra/create-elm-app" ]

@@ -157,7 +157,7 @@ getDate : Result String String -> Html msg
 getDate result =
     case result of
         Ok date ->
-            small [ class "text-muted" ] [ span [] [ text "Created on: " ], b [] [ text date ] ]
+            small [] [ span [] [ text "Created on: " ], b [] [ text date ] ]
 
         Err _ ->
             text ""
@@ -213,7 +213,7 @@ toRepoCard repo =
             [ div [ class "card-body" ]
                 [ div [ class "d-flex justify-content-between" ]
                     [ h5
-                        [ class "card-title" ]
+                        [ class "card-title text-secondary" ]
                         [ text repo.name ]
                     , repo.language
                         |> Maybe.map getLanguageBadge
@@ -222,7 +222,7 @@ toRepoCard repo =
                 , repo.description
                     |> Maybe.map
                         (\description ->
-                            p [ class "card-text text-muted text-truncate" ]
+                            p [ class "card-text text-truncate" ]
                                 [ text description ]
                         )
                     |> Maybe.withDefault (p [ style "min-height" "24px" ] [ text " " ])
@@ -273,7 +273,7 @@ getRepos profile =
 renderProfileRepos : Profile -> Html msg
 renderProfileRepos profile =
     div [ class "pt-2" ]
-        [ h4 [ class "text-muted mb-4" ] [ text "Repositories:" ]
+        [ h4 [ class "mb-4" ] [ text "Repositories:" ]
         , div [ class "row" ] (getRepos profile)
         ]
 

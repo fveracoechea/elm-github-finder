@@ -1,10 +1,7 @@
-:root {
-    --gf-footer-bg: #404c5a;
-    --gf-footer-link-color: #5e8bce;
-}
+@import "./global";
 
 body {
-    background-color: var(--gf-footer-bg);
+    background-color: $secondary;
 }
 
 footer {
@@ -12,12 +9,12 @@ footer {
 }
 
 footer a {
-    color: var(--gf-footer-link-color);
+    color: $primary;
     text-decoration: none;
 }
 
 footer a:hover {
-    color: var(--gf-footer-link-color);
+    color: $primary;
     text-decoration: underline;
 }
 
