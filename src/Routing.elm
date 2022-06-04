@@ -1,4 +1,4 @@
-module Routing exposing (Route(..), href, parseUrlToRoute, routeToPieces, routeToString)
+module Routing exposing (Route(..), href, isActiveLink, parseUrlToRoute, routeToPieces, routeToString)
 
 import Html exposing (Attribute)
 import Html.Attributes as Attr
@@ -47,6 +47,26 @@ routeToPieces page =
 
         ProfileDetail username ->
             [ "profiles", username ]
+
+
+isActiveLink : Route -> Route -> Attribute msg
+isActiveLink linkRoute currentRoute =
+    let
+        linkPath =
+            routeToPieces linkRoute
+                |> List.head
+                |> Maybe.withDefault "/"
+
+        currentPath =
+            routeToPieces currentRoute
+                |> List.head
+                |> Maybe.withDefault "/"
+    in
+    if linkPath == currentPath then
+        Attr.class "active"
+
+    else
+        Attr.class ""
 
 
 href : Route -> Attribute msg

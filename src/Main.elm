@@ -69,19 +69,19 @@ mapToPage route key layout =
         ( model, cmd ) =
             case route of
                 Routing.ProfileDetail username ->
-                    ProfileDetailPage.init username key layout
+                    ProfileDetailPage.init username key { layout | activeRoute = Routing.ProfileDetail username }
                         |> updateWith ProfileDetail GotProfileDetailPageMsg
 
                 Routing.Search ->
-                    SearchPage.init key layout
+                    SearchPage.init key { layout | activeRoute = Routing.Search }
                         |> updateWith Search GotSearchPageMsg
 
                 Routing.Favorites ->
-                    FavoritesPage.init key layout
+                    FavoritesPage.init key { layout | activeRoute = Routing.Favorites }
                         |> updateWith Favorites GotFavoritesPageMsg
 
                 Routing.Home ->
-                    HomePage.init key layout
+                    HomePage.init key { layout | activeRoute = Routing.Home }
                         |> updateWith Home (\_ -> GotHomePageMsg)
     in
     ( model, Cmd.batch [ cmd, Cmd.map GotLayoutMsg (Layout.init ()) ] )

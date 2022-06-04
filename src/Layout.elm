@@ -35,6 +35,7 @@ initialModel : Model
 initialModel =
     { isMobile = True
     , isNavOpen = True
+    , activeRoute = Routing.Home
     , navigation =
         { initial = 140
         , current = 0
@@ -45,6 +46,7 @@ initialModel =
 type alias Model =
     { isMobile : Bool
     , isNavOpen : Bool
+    , activeRoute : Routing.Route
     , navigation : NavigationHeight
     }
 
@@ -130,13 +132,21 @@ header toggleMsg model =
                 , div [ class "collapse navbar-collapse justify-content-between", id navID, getNavHeight model ]
                     [ ul [ class "navbar-nav" ]
                         [ li [ class "nav-item" ]
-                            [ a [ class "nav-link", Routing.href Routing.Search ]
+                            [ a
+                                [ class "nav-link"
+                                , Routing.href Routing.Search
+                                , Routing.isActiveLink Routing.Search model.activeRoute
+                                ]
                                 [ i [ class "bi bi-search me-2" ] []
                                 , text "Search"
                                 ]
                             ]
                         , li [ class "nav-item" ]
-                            [ a [ class "nav-link", Routing.href Routing.Favorites ]
+                            [ a
+                                [ class "nav-link"
+                                , Routing.href Routing.Favorites
+                                , Routing.isActiveLink Routing.Favorites model.activeRoute
+                                ]
                                 [ i [ class "bi bi-heart-fill me-2" ] [], text "Favorites" ]
                             ]
                         ]
