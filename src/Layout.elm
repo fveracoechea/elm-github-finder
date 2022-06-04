@@ -173,7 +173,7 @@ header toggleMsg model =
 
 footer : () -> Html msg
 footer _ =
-    Html.footer [ class "page-footer font-small indigo" ]
+    Html.footer [ class "page-footer font-small", style "background-color" "var(--gf-footer-bg)" ]
         [ div [ class "container" ]
             [ div [ class "row d-flex text-center justify-content-center mb-md-0 mb-4" ]
                 [ div [ class "col-md-8 col-12 mt-5" ]
@@ -182,7 +182,7 @@ footer _ =
                         [ text
                             """
                             Small experiments, inspired inventions,
-                            and the software everyone depends on—the code you write on
+                            and the software everyone depends on. The code you write on
                             GitHub can reach one codebase or millions.
                             """
                         ]
@@ -190,41 +190,38 @@ footer _ =
                 ]
             , hr [ class "rgba-white-light" ]
                 []
-            , div [ class "row text-center d-flex justify-content-center pt-5 mb-3" ]
+            , div [ class "row text-center d-flex justify-content-center pt-5 mb-3 footer-links" ]
                 [ div [ class "col-md-2 mb-3" ]
                     [ h6 [ class "text-uppercase" ]
-                        [ a [ href "#!" ]
-                            [ text "About us" ]
+                        [ a [ Routing.href Routing.Home ]
+                            [ text "Home" ]
                         ]
                     ]
                 , div [ class "col-md-2 mb-3" ]
                     [ h6 [ class "text-uppercase" ]
-                        [ a [ href "#!" ]
-                            [ text "Products" ]
+                        [ a [ Routing.href Routing.Search ]
+                            [ text "Search" ]
                         ]
                     ]
                 , div [ class "col-md-2 mb-3" ]
                     [ h6 [ class "text-uppercase" ]
-                        [ a [ href "#!" ]
-                            [ text "Awards" ]
-                        ]
-                    ]
-                , div [ class "col-md-2 mb-3" ]
-                    [ h6 [ class "text-uppercase" ]
-                        [ a [ href "#!" ]
-                            [ text "Help" ]
-                        ]
-                    ]
-                , div [ class "col-md-2 mb-3" ]
-                    [ h6 [ class "text-uppercase" ]
-                        [ a [ href "#!" ]
-                            [ text "Contact" ]
+                        [ a [ Routing.href Routing.Favorites ]
+                            [ text "Favorites" ]
                         ]
                     ]
                 ]
             ]
         , div [ class "footer-copyright text-center py-3" ]
-            [ text "© 2020 Copyright - Francisco Veracoechea"
+            [ p []
+                [ text "This project is bootstrapped with "
+                , a [ href "https://github.com/halfzebra/create-elm-app" ]
+                    [ text "Create Elm App" ]
+                , text " and uses "
+                , a [ href "https://getbootstrap.com/" ]
+                    [ text "Bootstrap" ]
+                , text " as styling framework."
+                ]
+            , p [] [ text "© 2022 Copyright - Francisco Veracoechea" ]
             ]
         ]
 

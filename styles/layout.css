@@ -1,0 +1,34 @@
+:root {
+    --gf-footer-bg: #404c5a;
+    --gf-footer-link-color: #5e8bce;
+}
+
+body {
+    background-color: var(--gf-footer-bg);
+}
+
+footer {
+    color: #ddd;
+}
+
+footer a {
+    color: var(--gf-footer-link-color);
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: var(--gf-footer-link-color);
+    text-decoration: underline;
+}
+
+@media (max-width: 991px) {
+
+    #header-navigation {
+        transition: height 0.6s ease 0s;
+        display: block;
+    }
+
+    #header-navigation ul li:last-child {
+        margin-bottom: 8px;
+    }
+}

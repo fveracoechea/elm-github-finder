@@ -4,7 +4,7 @@ https://elm-github-finder.netlify.app/
 
 [Elm](https://elm-lang.org/) application that lets you search for any GitHub profile or repository and check out its public information.
 
-This project is bootstrapped with [Create Elm App](https://github.com/halfzebra/create-elm-app) and uses [Bootstrap](https://getbootstrap.com/) for styling
+This project is bootstrapped with [Create Elm App](https://github.com/halfzebra/create-elm-app) and uses [Bootstrap](https://getbootstrap.com/) as styling framework.
 
 ## How to run it using yarn:
 
