@@ -8,6 +8,8 @@ import Url.Parser as Parser exposing ((</>))
 
 type Route
     = Home
+    | Search
+    | Favorites
     | ProfileDetail String
 
 
@@ -15,6 +17,8 @@ routeParser : Parser.Parser (Route -> a) a
 routeParser =
     Parser.oneOf
         [ Parser.map Home Parser.top
+        , Parser.map Search (Parser.s "search")
+        , Parser.map Favorites (Parser.s "favorites")
         , Parser.map ProfileDetail (Parser.s "profiles" </> Parser.string)
         ]
 
@@ -34,6 +38,12 @@ routeToPieces page =
     case page of
         Home ->
             []
+
+        Search ->
+            [ "search" ]
+
+        Favorites ->
+            [ "favorites" ]
 
         ProfileDetail username ->
             [ "profiles", username ]
