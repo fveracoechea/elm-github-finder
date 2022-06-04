@@ -173,7 +173,7 @@ header toggleMsg model =
 
 footer : () -> Html msg
 footer _ =
-    Html.footer [ class "page-footer font-small", style "background-color" "var(--gf-footer-bg)" ]
+    Html.footer [ class "footer page-footer font-small bg-secondary" ]
         [ div [ class "container" ]
             [ div [ class "row d-flex text-center justify-content-center mb-md-0 mb-4" ]
                 [ div [ class "col-md-8 col-12 mt-5" ]

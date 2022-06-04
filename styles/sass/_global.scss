@@ -3,47 +3,9 @@
 // Variable overrides first
 $primary: rgb(18, 147, 216);
 $dark: #2b2b2b;
-$secondary: rgb(41, 88, 113);
+$secondary: rgb(37, 82, 106);
 $enable-shadows: true;
 $prefix: "gf-";
 $enable-gradients: true;
 
 @import "../../node_modules/bootstrap/scss/bootstrap.scss";
-
-// Required Bootstrap imports
-// @import "../../node_modules/bootstrap/scss/variables";
-// @import "../../node_modules/bootstrap/scss/maps";
-// @import "../../node_modules/bootstrap/scss/mixins";
-// @import "../../node_modules/bootstrap/scss/root";
-
-// Optional components
-// @import "../../node_modules/bootstrap/scss/utilities";
-// @import "../../node_modules/bootstrap/scss/reboot";
-// @import "../../node_modules/bootstrap/scss/containers";
-// @import "../../node_modules/bootstrap/scss/grid";
-// @import "../../node_modules/bootstrap/scss/helpers";
-
-// $all-colors: map-merge-multiple($blues, $indigos, $purples, $pinks, $reds, $oranges, $yellows, $greens, $teals, $cyans);
-
-// $utilities: map-merge(
-//     $utilities,
-//     (
-//         "color": map-merge(
-//         map-get($utilities, "color"),
-//         (
-//             values: map-merge(
-//             map-get(map-get($utilities, "color"), "values"),
-//             (
-//                 $all-colors
-//             ),
-//             ),
-//         ),
-//         ),
-//     )
-// );
-
-
-// @import "../../node_modules/bootstrap/scss/utilities/api";
-
-
-
