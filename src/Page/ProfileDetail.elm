@@ -7,6 +7,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Http
 import Json.Decode as D
+import Layout
 import Profile as Profile exposing (Profile, Repository, profileDecoder, repositoryDecoder)
 import Routing exposing (Route(..))
 import Task exposing (Task)
@@ -21,6 +22,7 @@ type Msg
     = Noop
     | SearchProfile String
     | GotProfile (Result Http.Error Profile)
+    | GotLayoutMsg
 
 
 type ProfileState
@@ -32,6 +34,7 @@ type ProfileState
 type alias Model =
     { navKey : Key
     , profile : ProfileState
+    , layout : Layout.Model
     }
 
 
@@ -67,13 +70,14 @@ fetchProfile username =
 -- INIT
 
 
-init : String -> Key -> ( Model, Cmd Msg )
-init username key =
+init : String -> Key -> Layout.Model -> ( Model, Cmd Msg )
+init username key layout =
     let
         model : Model
         model =
             { navKey = key
             , profile = Loading username
+            , layout = layout
             }
     in
     ( model, Task.attempt GotProfile (fetchProfile username) )

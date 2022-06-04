@@ -4,16 +4,18 @@ import Browser exposing (UrlRequest(..))
 import Browser.Navigation exposing (Key)
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Layout
 
 
 type alias Model =
     { navKey : Browser.Navigation.Key
+    , layout : Layout.Model
     }
 
 
-init : Key -> ( Model, Cmd msg )
-init key =
-    ( { navKey = key }, Cmd.none )
+init : Key -> Layout.Model -> ( Model, Cmd msg )
+init key layout =
+    ( { navKey = key, layout = layout }, Cmd.none )
 
 
 view : () -> Html msg
@@ -31,8 +33,22 @@ view _ =
                             advanced development platform in the world.
                             """
                         ]
-                    , button [ class "btn-lg btn btn-outline-primary me-4" ] [ text "Profiles" ]
-                    , button [ class "btn-lg btn btn-outline-light" ] [ text "Repositories" ]
+                    , Html.form [ class "d-flex justify-content-center", attribute "role" "search" ]
+                        [ input
+                            [ class "form-control me-2 text-light banner-input border-primary "
+                            , placeholder "Profiles, Repositories and more..."
+                            , attribute "aria-label" "Search"
+                            , style "max-width" "265px"
+                            ]
+                            []
+                        , button
+                            [ class "btn btn-primary"
+                            , type_ "submit"
+                            , attribute "aria-label" "submit search"
+                            , style "min-width" "8rem"
+                            ]
+                            [ text "Search now!" ]
+                        ]
                     ]
                 ]
             ]
