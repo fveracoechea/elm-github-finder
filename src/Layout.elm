@@ -64,10 +64,6 @@ init _ =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        _ =
-            Debug.log "model" model
-    in
     case msg of
         WindowResized width ->
             ( { model | isMobile = width <= 991 }
