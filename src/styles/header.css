@@ -1,0 +1,11 @@
+@media (max-width: 991px) {
+
+    #header-navigation {
+        display: block;
+        /* padding-bottom: 16px; */
+    }
+
+    #header-navigation ul li:last-child {
+        margin-bottom: 8px;
+    }
+}

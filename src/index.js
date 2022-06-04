@@ -2,6 +2,7 @@ import { Elm } from "./Main.elm";
 import * as serviceWorker from "./serviceWorker";
 
 import "./styles/homepage.css";
+import "./styles/header.css";
 
 const app = Elm.Main.init({
     node: document.getElementById("root"),
