@@ -1,7 +1,6 @@
 module Main exposing (main)
 
 import Browser exposing (Document, UrlRequest(..))
-import Browser.Events exposing (onResize)
 import Browser.Navigation as Navigation exposing (Key)
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -19,10 +18,7 @@ import Url exposing (Url)
 
 
 type Msg
-    = Noop
-    | OnSearch
-    | SetQuery String
-    | SendUserToExternalUrl String
+    = SendUserToExternalUrl String
     | UrlChanged Url
     | UrlChangeRequested Url
     | GotHomePageMsg

@@ -1,12 +1,10 @@
 module Layout exposing (Model, Msg(..), footer, header, init, initialModel, subscriptions, update)
 
-import Browser.Dom as Dom
 import Browser.Events exposing (onAnimationFrame, onResize)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Routing
-import Task
 
 
 
@@ -128,7 +126,7 @@ header toggleMsg model =
     Html.header []
         [ nav [ class "navbar navbar-expand-lg navbar-dark bg-dark" ]
             [ div [ class "container" ]
-                [ a [ onClick toggleMsg, class "navbar-brand", Routing.href Routing.Home ]
+                [ a [ class "navbar-brand", Routing.href Routing.Home ]
                     [ i [ class "bi bi-github", style "margin-right" "10px", style "font-size" "1.43rem" ]
                         []
                     , text "Github Finder"
@@ -137,13 +135,13 @@ header toggleMsg model =
                 , div [ class "collapse navbar-collapse justify-content-between", id navID, getNavHeight model ]
                     [ ul [ class "navbar-nav" ]
                         [ li [ class "nav-item" ]
-                            [ a [ onClick toggleMsg, class "nav-link", Routing.href Routing.Search ]
+                            [ a [ class "nav-link", Routing.href Routing.Search ]
                                 [ i [ class "bi bi-search me-2" ] []
                                 , text "Search"
                                 ]
                             ]
                         , li [ class "nav-item" ]
-                            [ a [ onClick toggleMsg, class "nav-link", Routing.href Routing.Favorites ]
+                            [ a [ class "nav-link", Routing.href Routing.Favorites ]
                                 [ i [ class "bi bi-heart-fill me-2" ] [], text "Favorites" ]
                             ]
                         ]
