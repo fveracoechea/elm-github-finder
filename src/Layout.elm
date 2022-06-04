@@ -74,15 +74,11 @@ update msg model =
             )
 
         MobileNavToggled ->
-            let
-                r =
-                    if model.isMobile then
-                        ( { model | isNavOpen = not model.isNavOpen }, Cmd.none )
+            if model.isMobile then
+                ( { model | isNavOpen = not model.isNavOpen }, Cmd.none )
 
-                    else
-                        ( model, Cmd.none )
-            in
-            Debug.log "MobileNavToggled" r
+            else
+                ( model, Cmd.none )
 
         GotAnimationFrame ->
             let
