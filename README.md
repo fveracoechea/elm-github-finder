@@ -6,7 +6,7 @@ https://elm-github-finder.netlify.app/
 
 This project is bootstrapped with [Create Elm App](https://github.com/halfzebra/create-elm-app) and uses [Bootstrap](https://getbootstrap.com/) for styling
 
-# How to run it using yarn:
+## How to run it using yarn:
 
 ```sh
 # git clone
