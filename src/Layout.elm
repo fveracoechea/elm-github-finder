@@ -1,6 +1,6 @@
 module Layout exposing (Model, Msg(..), footer, header, init, initialModel, subscriptions, update)
 
-import Browser.Events exposing (onAnimationFrame, onResize)
+import Browser.Events exposing (onResize)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -14,7 +14,6 @@ import Routing
 type Msg
     = MobileNavToggled
     | WindowResized Int
-    | GotAnimationFrame
 
 
 
@@ -35,7 +34,7 @@ type alias NavigationHeight =
 initialModel : Model
 initialModel =
     { isMobile = True
-    , isNavOpen = False
+    , isNavOpen = True
     , navigation =
         { initial = 140
         , current = 0
@@ -65,6 +64,10 @@ init _ =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        _ =
+            Debug.log "model" model
+    in
     case msg of
         WindowResized width ->
             ( { model | isMobile = width <= 991 }
@@ -72,40 +75,36 @@ update msg model =
             )
 
         MobileNavToggled ->
-            if model.isMobile then
-                ( { model | isNavOpen = not model.isNavOpen }, Cmd.none )
-
-            else
-                ( model, Cmd.none )
-
-        GotAnimationFrame ->
             let
                 current =
                     model.navigation.current
 
                 initial =
                     model.navigation.initial
-            in
-            if model.isMobile && not model.isNavOpen && current > 0 then
-                let
-                    nav =
-                        { initial = initial
-                        , current = current - 6
-                        }
-                in
-                ( { model | navigation = nav }, Cmd.none )
 
-            else if model.isMobile && model.isNavOpen && current < initial then
+                isNavOpen =
+                    not model.isNavOpen
+            in
+            if not model.isNavOpen && current > 0 then
                 let
                     nav =
                         { initial = initial
-                        , current = current + 6
+                        , current = 0
                         }
                 in
-                ( { model | navigation = nav }, Cmd.none )
+                ( { model | navigation = nav, isNavOpen = isNavOpen }, Cmd.none )
+
+            else if model.isNavOpen && current < initial then
+                let
+                    nav =
+                        { initial = initial
+                        , current = initial
+                        }
+                in
+                ( { model | navigation = nav, isNavOpen = isNavOpen }, Cmd.none )
 
             else
-                ( model, Cmd.none )
+                ( { model | isNavOpen = isNavOpen }, Cmd.none )
 
 
 
@@ -229,26 +228,5 @@ footer _ =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    let
-        resizeSub =
-            onResize (\w _ -> WindowResized w)
-
-        current =
-            model.navigation.current
-
-        initial =
-            model.navigation.initial
-
-        animationSub =
-            if model.isMobile then
-                if not model.isNavOpen && current > 0 || model.isNavOpen && current < initial then
-                    onAnimationFrame (\_ -> GotAnimationFrame)
-
-                else
-                    Sub.none
-
-            else
-                Sub.none
-    in
-    Sub.batch [ resizeSub, animationSub ]
+subscriptions _ =
+    onResize (\w _ -> WindowResized w)
