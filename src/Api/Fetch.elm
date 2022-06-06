@@ -1,4 +1,4 @@
-module Api exposing (Endpoint(..), Request, fetch, methods)
+module Api.Fetch exposing (Endpoint(..), Request, fetch, methods)
 
 import Http
 import Json.Decode exposing (Decoder)
