@@ -70,10 +70,6 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GotQuery query ->
-            let
-                _ =
-                    Debug.log "GotQuery" query
-            in
             ( { model | query = query }, Cmd.none )
 
         WindowResized width ->

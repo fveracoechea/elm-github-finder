@@ -27,7 +27,7 @@ type Msg
 
 init : Layout.Model -> ( Model, Cmd msg )
 init layout =
-    ( Debug.log "Search model" { profiles = Nothing, layout = layout }, Cmd.none )
+    ( { profiles = Nothing, layout = layout }, Cmd.none )
 
 
 
