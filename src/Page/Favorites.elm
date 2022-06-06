@@ -1,7 +1,6 @@
-module Page.Favorites exposing (Model, Msg(..), init, toNavKey, view)
+module Page.Favorites exposing (Model, Msg(..), init, view)
 
 import Browser exposing (UrlRequest(..))
-import Browser.Navigation exposing (Key)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Layout
@@ -12,8 +11,7 @@ import Layout
 
 
 type alias Model =
-    { navKey : Browser.Navigation.Key
-    , layout : Layout.Model
+    { layout : Layout.Model
     , query : String
     }
 
@@ -26,9 +24,9 @@ type Msg
 -- INIT
 
 
-init : Key -> Layout.Model -> ( Model, Cmd msg )
-init key layout =
-    ( { navKey = key, query = "", layout = layout }, Cmd.none )
+init : Layout.Model -> ( Model, Cmd msg )
+init layout =
+    ( { query = "", layout = layout }, Cmd.none )
 
 
 
@@ -40,12 +38,3 @@ view _ =
     div [ class "row" ]
         [ h2 [] [ text "Favorites page" ]
         ]
-
-
-
--- HELPERS
-
-
-toNavKey : Model -> Key
-toNavKey model =
-    model.navKey

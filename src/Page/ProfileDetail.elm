@@ -1,16 +1,14 @@
-module Page.ProfileDetail exposing (Model, Msg(..), fetchProfile, init, toNavKey, update, view)
+module Page.ProfileDetail exposing (Model, Msg(..), init, update, view)
 
-import Api
-import Browser.Navigation exposing (Key)
+import Api.Profile exposing (Profile, fetchProfile)
+import Api.Repository exposing (Repository)
 import Date
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Http
-import Json.Decode as D
 import Layout
-import Profile as Profile exposing (Profile, Repository, profileDecoder, repositoryDecoder)
 import Routing exposing (Route(..))
-import Task exposing (Task)
+import Task
 import Time
 
 
@@ -32,51 +30,21 @@ type ProfileState
 
 
 type alias Model =
-    { navKey : Key
-    , profile : ProfileState
+    { profile : ProfileState
     , layout : Layout.Model
     }
-
-
-
--- HTTP REQUEST
-
-
-attachProfileRepos : Profile -> Task Http.Error Profile
-attachProfileRepos profile =
-    Api.fetch
-        { endpoint = Api.Endpoint ("/users/" ++ profile.login ++ "/repos")
-        , decoder = D.list repositoryDecoder
-        , body = Nothing
-        , headers = Nothing
-        , method = Api.methods.get
-        }
-        |> Task.map (Profile.addRepos profile)
-
-
-fetchProfile : String -> Task Http.Error Profile
-fetchProfile username =
-    Api.fetch
-        { endpoint = Api.Endpoint ("/users/" ++ username)
-        , decoder = profileDecoder
-        , body = Nothing
-        , headers = Nothing
-        , method = Api.methods.get
-        }
-        |> Task.andThen attachProfileRepos
 
 
 
 -- INIT
 
 
-init : String -> Key -> Layout.Model -> ( Model, Cmd Msg )
-init username key layout =
+init : String -> Layout.Model -> ( Model, Cmd Msg )
+init username layout =
     let
         model : Model
         model =
-            { navKey = key
-            , profile = Loading username
+            { profile = Loading username
             , layout = layout
             }
     in
@@ -286,7 +254,7 @@ renderBreadcrumbs profile =
                 [ a [ Routing.href Routing.Home ] [ text "Home" ]
                 ]
             , li [ class "breadcrumb-item" ]
-                [ text "Profile"
+                [ a [ Routing.href Routing.Search ] [ text "Search" ]
                 ]
             , li [ attribute "aria-current" "page", class "breadcrumb-item active" ]
                 [ text profile.login ]
@@ -393,12 +361,3 @@ update msg model =
 
         _ ->
             ( model, Cmd.none )
-
-
-
--- HELPERS
-
-
-toNavKey : Model -> Key
-toNavKey model =
-    model.navKey

@@ -1,7 +1,6 @@
-module Page.Home exposing (Model, init, toNavKey, view)
+module Page.Home exposing (Model, init, view)
 
 import Browser exposing (UrlRequest(..))
-import Browser.Navigation exposing (Key)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Layout
@@ -9,14 +8,13 @@ import Routing
 
 
 type alias Model =
-    { navKey : Browser.Navigation.Key
-    , layout : Layout.Model
+    { layout : Layout.Model
     }
 
 
-init : Key -> Layout.Model -> ( Model, Cmd msg )
-init key layout =
-    ( { navKey = key, layout = layout }, Cmd.none )
+init : Layout.Model -> ( Model, Cmd msg )
+init layout =
+    ( { layout = layout }, Cmd.none )
 
 
 view : () -> Html msg
@@ -48,12 +46,3 @@ view _ =
                 ]
             ]
         ]
-
-
-
--- HELPERS
-
-
-toNavKey : Model -> Key
-toNavKey model =
-    model.navKey
