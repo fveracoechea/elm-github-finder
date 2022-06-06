@@ -1,6 +1,7 @@
-module Layout exposing (Model, Msg(..), footer, header, init, initialModel, subscriptions, update)
+module Layout exposing (Model, Msg(..), footer, header, init, subscriptions, update)
 
 import Browser.Events exposing (onResize)
+import Browser.Navigation as Navigation
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -14,6 +15,8 @@ import Routing
 type Msg
     = MobileNavToggled
     | WindowResized Int
+    | GotQuery String
+    | GotSearchRequest
 
 
 
@@ -31,21 +34,11 @@ type alias NavigationHeight =
     }
 
 
-initialModel : Model
-initialModel =
-    { isMobile = True
-    , isNavOpen = True
-    , activeRoute = Routing.Home
-    , navigation =
-        { initial = 140
-        , current = 0
-        }
-    }
-
-
 type alias Model =
     { isMobile : Bool
     , isNavOpen : Bool
+    , query : String
+    , navKey : Navigation.Key
     , activeRoute : Routing.Route
     , navigation : NavigationHeight
     }
@@ -55,9 +48,18 @@ type alias Model =
 -- INIT
 
 
-init : () -> Cmd Msg
-init _ =
-    Cmd.none
+init : Navigation.Key -> Model
+init key =
+    { isMobile = True
+    , isNavOpen = True
+    , query = ""
+    , navKey = key
+    , activeRoute = Routing.Home
+    , navigation =
+        { initial = 140
+        , current = 0
+        }
+    }
 
 
 
@@ -67,6 +69,13 @@ init _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GotQuery query ->
+            let
+                _ =
+                    Debug.log "GotQuery" query
+            in
+            ( { model | query = query }, Cmd.none )
+
         WindowResized width ->
             ( { model | isMobile = width <= 991 }
             , Cmd.none
@@ -104,6 +113,13 @@ update msg model =
             else
                 ( { model | isNavOpen = isNavOpen }, Cmd.none )
 
+        GotSearchRequest ->
+            ( model
+            , Routing.Search
+                |> Routing.routeToString
+                |> Navigation.pushUrl model.navKey
+            )
+
 
 
 -- VIEW
@@ -118,8 +134,8 @@ getNavHeight model =
         style "height" "auto"
 
 
-header : toggleMsg -> Model -> Html toggleMsg
-header toggleMsg model =
+header : Model -> Html Msg
+header model =
     Html.header []
         [ nav [ class "navbar navbar-expand-lg navbar-dark bg-dark" ]
             [ div [ class "container" ]
@@ -128,7 +144,7 @@ header toggleMsg model =
                         []
                     , text "Github Finder"
                     ]
-                , button [ onClick toggleMsg, class "navbar-toggler", type_ "button" ] [ span [ class "navbar-toggler-icon" ] [] ]
+                , button [ onClick MobileNavToggled, class "navbar-toggler", type_ "button" ] [ span [ class "navbar-toggler-icon" ] [] ]
                 , div [ class "collapse navbar-collapse justify-content-between", id navID, getNavHeight model ]
                     [ ul [ class "navbar-nav" ]
                         [ li [ class "nav-item" ]
@@ -150,16 +166,17 @@ header toggleMsg model =
                                 [ i [ class "bi bi-heart-fill me-2" ] [], text "Favorites" ]
                             ]
                         ]
-                    , Html.form [ class "d-flex", attribute "role" "search" ]
+                    , Html.form [ class "d-flex", attribute "role" "search", onSubmit GotSearchRequest ]
                         [ input
                             [ class "form-control me-2"
                             , placeholder "What are you looking for?"
                             , attribute "aria-label" "Search"
                             , style "min-width" "221px"
+                            , onInput GotQuery
                             ]
                             []
                         , button
-                            [ class "btn btn-outline-primary"
+                            [ class "btn btn-primary text-light"
                             , type_ "submit"
                             , attribute "aria-label" "submit search"
                             ]
@@ -171,7 +188,7 @@ header toggleMsg model =
         ]
 
 
-footer : () -> Html msg
+footer : Model -> Html Msg
 footer _ =
     Html.footer [ class "footer page-footer font-small bg-secondary" ]
         [ div [ class "container" ]

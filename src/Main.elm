@@ -51,40 +51,40 @@ getKeyFromModel : Model -> Key
 getKeyFromModel model =
     case model of
         Home subModel ->
-            HomePage.toNavKey subModel
+            subModel.layout.navKey
 
         ProfileDetail subModel ->
-            ProfileDetailPage.toNavKey subModel
+            subModel.layout.navKey
 
         Search subModel ->
-            SearchPage.toNavKey subModel
+            subModel.layout.navKey
 
         Favorites subModel ->
-            FavoritesPage.toNavKey subModel
+            subModel.layout.navKey
 
 
-mapToPage : Route -> Key -> Layout.Model -> ( Model, Cmd Msg )
-mapToPage route key layout =
+mapToPage : Route -> Layout.Model -> ( Model, Cmd Msg )
+mapToPage route layout =
     let
         ( model, cmd ) =
             case route of
                 Routing.ProfileDetail username ->
-                    ProfileDetailPage.init username key { layout | activeRoute = Routing.ProfileDetail username }
+                    ProfileDetailPage.init username { layout | activeRoute = Routing.ProfileDetail username }
                         |> updateWith ProfileDetail GotProfileDetailPageMsg
 
                 Routing.Search ->
-                    SearchPage.init key { layout | activeRoute = Routing.Search }
+                    SearchPage.init { layout | activeRoute = Routing.Search }
                         |> updateWith Search GotSearchPageMsg
 
                 Routing.Favorites ->
-                    FavoritesPage.init key { layout | activeRoute = Routing.Favorites }
+                    FavoritesPage.init { layout | activeRoute = Routing.Favorites }
                         |> updateWith Favorites GotFavoritesPageMsg
 
                 Routing.Home ->
-                    HomePage.init key { layout | activeRoute = Routing.Home }
+                    HomePage.init { layout | activeRoute = Routing.Home }
                         |> updateWith Home (\_ -> GotHomePageMsg)
     in
-    ( model, Cmd.batch [ cmd, Cmd.map GotLayoutMsg (Layout.init ()) ] )
+    ( model, cmd )
 
 
 
@@ -93,7 +93,7 @@ mapToPage route key layout =
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init _ url key =
-    mapToPage (parseUrlToRoute url) key Layout.initialModel
+    mapToPage (parseUrlToRoute url) (Layout.init key)
 
 
 
@@ -118,15 +118,22 @@ getLayoutModel model =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        key =
+            getKeyFromModel model
+    in
     case ( msg, model ) of
         ( SendUserToExternalUrl url, _ ) ->
             ( model, Navigation.load url )
 
         ( UrlChangeRequested url, _ ) ->
-            ( model, Navigation.pushUrl (getKeyFromModel model) (Url.toString url) )
+            ( model, Navigation.pushUrl key (Url.toString url) )
 
         ( UrlChanged url, currentPage ) ->
-            mapToPage (parseUrlToRoute url) (getKeyFromModel model) (getLayoutModel currentPage)
+            currentPage
+                |> getLayoutModel
+                |> (\layout -> { layout | navKey = key })
+                |> mapToPage (parseUrlToRoute url)
 
         ( GotProfileDetailPageMsg subMsg, ProfileDetail subModel ) ->
             ProfileDetailPage.update subMsg subModel
@@ -158,11 +165,19 @@ update msg model =
 -- VIEW
 
 
+renderLayout : Model -> (Layout.Model -> Html Layout.Msg) -> Html Msg
+renderLayout model render =
+    model
+        |> getLayoutModel
+        |> render
+        |> Html.map GotLayoutMsg
+
+
 view : Model -> Document Msg
 view model =
     { title = "Github Finder"
     , body =
-        [ Layout.header (GotLayoutMsg Layout.MobileNavToggled) (getLayoutModel model)
+        [ renderLayout model Layout.header
         , div [ style "min-height" "20vh", style "background-color" "#f2f2f2", style "position" "relative" ]
             [ case model of
                 Home _ ->
@@ -170,18 +185,18 @@ view model =
                         [ HomePage.view () ]
 
                 ProfileDetail subModel ->
-                    main_ [ class "container" ]
+                    main_ [ class "container pb-4" ]
                         [ ProfileDetailPage.view subModel.profile ]
 
                 Search _ ->
-                    main_ [ class "container" ]
+                    main_ [ class "container pb-4" ]
                         [ SearchPage.view () ]
 
                 Favorites _ ->
-                    main_ [ class "container" ]
+                    main_ [ class "container pb-4" ]
                         [ FavoritesPage.view () ]
             ]
-        , Layout.footer ()
+        , renderLayout model Layout.footer
         ]
     }
 
