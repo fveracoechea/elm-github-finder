@@ -1,6 +1,6 @@
 module Page.ProfileDetail exposing (Model, Msg(..), init, update, view)
 
-import Api.Profile exposing (Profile, fetchProfile)
+import Api.Profile exposing (Profile)
 import Api.Repository exposing (Repository)
 import Date
 import Html exposing (..)
@@ -48,7 +48,7 @@ init username layout =
             , layout = layout
             }
     in
-    ( model, Task.attempt GotProfile (fetchProfile username) )
+    ( model, Task.attempt GotProfile (Api.Profile.fetchByUsername username) )
 
 
 
