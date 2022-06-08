@@ -1,17 +1,24 @@
-module Api.Fetch exposing (Endpoint(..), Request, fetch, methods)
+module Api.Fetch exposing (Endpoint(..), Request, buildUrl, fetch, methods)
 
 import Http
 import Json.Decode exposing (Decoder)
 import Task exposing (Task)
+import Url.Builder as Builder
 
 
 type Endpoint
     = Endpoint String
 
 
+buildUrl : List String -> List Builder.QueryParameter -> Endpoint
+buildUrl pathSegments parameters =
+    Builder.crossOrigin "https://api.github.com" pathSegments parameters
+        |> Endpoint
+
+
 getUrl : Endpoint -> String
-getUrl (Endpoint path) =
-    "https://api.github.com" ++ path
+getUrl (Endpoint url) =
+    url
 
 
 methods : { get : String, post : String }
@@ -21,11 +28,15 @@ methods =
     }
 
 
+headers : List Http.Header
+headers =
+    [ Http.header "Accept" "application/vnd.github.v3+json" ]
+
+
 type alias Request a =
     { endpoint : Endpoint
     , decoder : Decoder a
     , method : String
-    , headers : Maybe (List Http.Header)
     , body : Maybe Http.Body
     }
 
@@ -58,7 +69,7 @@ fetch : Request a -> Task Http.Error a
 fetch config =
     Http.task
         { method = config.method
-        , headers = Maybe.withDefault [] config.headers
+        , headers = headers
         , url = getUrl config.endpoint
         , body = Maybe.withDefault Http.emptyBody config.body
         , resolver =

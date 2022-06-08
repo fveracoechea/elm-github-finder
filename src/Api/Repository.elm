@@ -1,7 +1,15 @@
-module Api.Repository exposing (Repository, repositoriesDecoder, repositoryDecoder)
+module Api.Repository exposing (Repository, fetchByUsername, repositoryDecoder)
 
 import Api.Decoder exposing (nullable, optional, required)
+import Api.Fetch as Api
+import Http
 import Json.Decode as D
+import Platform exposing (Task)
+import Url exposing (Protocol(..))
+
+
+
+-- TYPE
 
 
 type alias Repository =
@@ -19,6 +27,10 @@ type alias Repository =
     , svn_url : String
     , readme : Maybe String
     }
+
+
+
+-- DECODERS
 
 
 repositoryDecoder : D.Decoder Repository
@@ -39,6 +51,15 @@ repositoryDecoder =
         |> optional "readme" D.string
 
 
-repositoriesDecoder : D.Decoder (List Repository)
-repositoriesDecoder =
-    D.list repositoryDecoder
+
+-- HTTP REQUEST
+
+
+fetchByUsername : String -> Task Http.Error (List Repository)
+fetchByUsername username =
+    Api.fetch
+        { endpoint = Api.buildUrl [ "users", username, "repos" ] []
+        , decoder = D.list repositoryDecoder
+        , body = Nothing
+        , method = Api.methods.get
+        }
