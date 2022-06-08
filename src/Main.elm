@@ -139,6 +139,10 @@ update msg model =
             ProfileDetailPage.update subMsg subModel
                 |> updateWith ProfileDetail GotProfileDetailPageMsg
 
+        ( GotSearchPageMsg subMsg, Search subModel ) ->
+            SearchPage.update subMsg subModel
+                |> updateWith Search GotSearchPageMsg
+
         ( GotLayoutMsg subMsg, currentPage ) ->
             case currentPage of
                 ProfileDetail p ->
@@ -188,9 +192,9 @@ view model =
                     main_ [ class "container pb-4" ]
                         [ ProfileDetailPage.view subModel.profile ]
 
-                Search _ ->
+                Search subModel ->
                     main_ [ class "container pb-4" ]
-                        [ SearchPage.view () ]
+                        [ Html.map GotSearchPageMsg (SearchPage.view subModel) ]
 
                 Favorites _ ->
                     main_ [ class "container pb-4" ]
