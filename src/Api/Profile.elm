@@ -1,4 +1,4 @@
-module Api.Profile exposing (Profile, ProfileMini, addRepos, fetchByUsername, fetchMostPopulars, search)
+module Api.Profile exposing (Profile, ProfileMini, addRepos, fetchByUsername, searchDecoder)
 
 import Api.Decoder exposing (nullable, optional, required)
 import Api.Fetch as Api
@@ -6,7 +6,6 @@ import Api.Repository as Repo exposing (Repository)
 import Http
 import Json.Decode as D
 import Task exposing (Task)
-import Url.Builder as UrlBuilder
 
 
 
@@ -39,11 +38,6 @@ type alias ProfileMini =
     }
 
 
-type alias SearchResults =
-    { items : List ProfileMini
-    }
-
-
 
 -- DECODERS
 
@@ -55,12 +49,6 @@ searchDecoder =
         |> required "avatar_url" D.string
         |> required "url" D.string
         |> required "id" D.int
-
-
-resultsDecoder : D.Decoder SearchResults
-resultsDecoder =
-    D.succeed SearchResults
-        |> required "items" (D.list searchDecoder)
 
 
 profileDecoder : D.Decoder Profile
@@ -111,19 +99,3 @@ fetchByUsername username =
         , method = Api.methods.get
         }
         |> Task.andThen attachProfileRepos
-
-
-search : List UrlBuilder.QueryParameter -> Task Http.Error SearchResults
-search parameters =
-    Api.fetch
-        { endpoint = Api.buildUrl [ "search", "users" ] parameters
-        , decoder = resultsDecoder
-        , body = Nothing
-        , method = Api.methods.get
-        }
-
-
-fetchMostPopulars : () -> Task Http.Error (List ProfileMini)
-fetchMostPopulars _ =
-    search [ UrlBuilder.string "q" "followers:>=2000" ]
-        |> Task.map .items

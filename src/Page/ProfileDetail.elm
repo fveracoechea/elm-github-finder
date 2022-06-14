@@ -1,7 +1,8 @@
 module Page.ProfileDetail exposing (Model, Msg(..), init, update, view)
 
+import Api.Dates as ApiDates
 import Api.Profile exposing (Profile)
-import Api.Repository exposing (Repository)
+import Api.Repository as Repo exposing (Repository)
 import Date
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -9,7 +10,6 @@ import Http
 import Layout
 import Routing exposing (Route(..))
 import Task
-import Time
 
 
 
@@ -112,115 +112,16 @@ renderUserHeading profile =
         ]
 
 
-dateFromString : String -> Result String Date.Date
-dateFromString stringDate =
-    stringDate
-        |> String.split "T"
-        |> List.head
-        |> Maybe.withDefault "invalid-date"
-        |> Date.fromIsoString
-
-
-getDate : Result String String -> Html msg
-getDate result =
-    case result of
-        Ok date ->
-            small [] [ span [] [ text "Created on: " ], b [] [ text date ] ]
-
-        Err _ ->
-            text ""
-
-
-renderDate : String -> Html msg
-renderDate stringDate =
-    stringDate
-        |> dateFromString
-        |> Result.map (Date.format "MMMM y")
-        |> getDate
-
-
-getLanguageBadge : String -> Html msg
-getLanguageBadge language =
-    let
-        classNames =
-            case language of
-                "Elm" ->
-                    "badge text-bg-primary"
-
-                "JavaScript" ->
-                    "badge text-bg-warning"
-
-                "TypeScript" ->
-                    "badge text-bg-info"
-
-                "Python" ->
-                    "badge text-bg-success"
-
-                "PHP" ->
-                    "badge text-bg-danger"
-
-                "Java" ->
-                    "badge text-bg-danger"
-
-                "C#" ->
-                    "badge text-bg-light"
-
-                _ ->
-                    "badge text-bg-secondary"
-    in
-    div []
-        [ span [ class classNames ]
-            [ text language ]
-        ]
-
-
-toRepoCard : Repository -> Html msg
-toRepoCard repo =
-    div [ class "col-lg-6" ]
-        [ div [ class "card mb-4" ]
-            [ div [ class "card-body" ]
-                [ div [ class "d-flex justify-content-between" ]
-                    [ h5
-                        [ class "card-title text-secondary" ]
-                        [ text repo.name ]
-                    , repo.language
-                        |> Maybe.map getLanguageBadge
-                        |> Maybe.withDefault (text "")
-                    ]
-                , repo.description
-                    |> Maybe.map
-                        (\description ->
-                            p [ class "card-text text-truncate" ]
-                                [ text description ]
-                        )
-                    |> Maybe.withDefault (p [ style "min-height" "24px" ] [ text " " ])
-                , renderDate repo.created_at
-                ]
-            ]
-        ]
-
-
-getDateWidthDefault : String -> Date.Date
-getDateWidthDefault date =
-    date
-        |> dateFromString
-        |> Result.withDefault
-            (0
-                |> Time.millisToPosix
-                |> Date.fromPosix Time.utc
-            )
-
-
 compareDate : Repository -> Repository -> Order
 compareDate a b =
     let
         dateA : Date.Date
         dateA =
-            getDateWidthDefault a.created_at
+            ApiDates.getDateWidthDefault a.created_at
 
         dateB : Date.Date
         dateB =
-            getDateWidthDefault b.created_at
+            ApiDates.getDateWidthDefault b.created_at
     in
     Date.compare dateB dateA
 
@@ -232,7 +133,7 @@ getRepos profile =
             repos
                 |> List.filter (\repo -> not repo.fork)
                 |> List.sortWith compareDate
-                |> List.map toRepoCard
+                |> List.map (Repo.renderCard 6 False)
 
         Nothing ->
             []
