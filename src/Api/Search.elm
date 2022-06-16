@@ -187,6 +187,22 @@ searchMostPopularRepositories page =
 -- HELPERS
 
 
+paramsToUrlQuery : Parameters -> UrlBuilder.QueryParameter
+paramsToUrlQuery param =
+    case param of
+        Query value ->
+            UrlBuilder.string "q" value
+
+        Sort value ->
+            UrlBuilder.string "sort" value
+
+        Order value ->
+            UrlBuilder.string "order" value
+
+        Page value ->
+            UrlBuilder.int "page" value
+
+
 getCategoryName : CategoryLabel -> String
 getCategoryName label =
     case label of
