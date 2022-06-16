@@ -202,9 +202,6 @@ update msg model =
 
                 (SortBy options) =
                     sortBy
-
-                _ =
-                    Debug.log "Selected options" (getQueryOptions selectedLabel options)
             in
             getQueryOptions selectedLabel options
                 |> getNewCategorySearch model cLabel selectedLabel
