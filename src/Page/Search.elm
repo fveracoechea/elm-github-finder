@@ -9,6 +9,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Http
 import Layout
+import List.Extra
 import Process
 import Routing
 import Task exposing (Task)
@@ -46,11 +47,11 @@ type Msg
 -- INIT
 
 
-setBestMatchActive : SearchCategory -> SearchCategory
-setBestMatchActive category =
+setActiveOptionByLabel : Label -> SearchCategory -> SearchCategory
+setActiveOptionByLabel selectedLabel category =
     mapSearchCategory
         (\label (SortBy sort) quick ->
-            ( label, SortBy (onOptionSelected sort (Label "Best match")), quick )
+            ( label, SortBy (onOptionSelected sort selectedLabel), quick )
         )
         category
 
@@ -63,14 +64,14 @@ init layout =
                 ( Process.sleep 800
                     |> Task.andThen (\_ -> search Api.Profile.searchDecoder "users" [ UrlBuilder.string "q" layout.query ])
                     |> Task.attempt GotProfileSearch
-                , setBestMatchActive profiles
+                , setActiveOptionByLabel (Label "Best match") profiles
                 )
 
             else
                 ( Process.sleep 800
                     |> Task.andThen (\_ -> searchMostPopularProfiles 1)
                     |> Task.attempt GotProfileSearch
-                , profiles
+                , setActiveOptionByLabel (Label "") profiles
                 )
     in
     ( { results = Loading, layout = layout, activeCategory = category }, cmd )
@@ -87,15 +88,19 @@ fetchSearch message task =
         |> Task.attempt message
 
 
-getNewCategorySearch : Model -> CategoryLabel -> ( Model, Cmd Msg )
-getNewCategorySearch model label =
+getNewCategorySearch : Model -> CategoryLabel -> Label -> List UrlBuilder.QueryParameter -> ( Model, Cmd Msg )
+getNewCategorySearch model label optionLabel params =
+    let
+        query =
+            List.append [ UrlBuilder.string "q" model.layout.query ] params
+    in
     case label of
         Repositories ->
             let
                 ( category, searchTask ) =
                     if not (String.isEmpty model.layout.query) then
-                        ( setBestMatchActive repositories
-                        , search Repo.repositoryDecoder "repositories" [ UrlBuilder.string "q" model.layout.query ]
+                        ( setActiveOptionByLabel optionLabel repositories
+                        , search Repo.repositoryDecoder "repositories" query
                         )
 
                     else
@@ -109,8 +114,8 @@ getNewCategorySearch model label =
             let
                 ( category, searchTask ) =
                     if not (String.isEmpty model.layout.query) then
-                        ( setBestMatchActive profiles
-                        , search Api.Profile.searchDecoder "users" [ UrlBuilder.string "q" model.layout.query ]
+                        ( setActiveOptionByLabel optionLabel profiles
+                        , search Api.Profile.searchDecoder "users" query
                         )
 
                     else
@@ -132,6 +137,24 @@ onOptionSelected options (Label label) =
                 else
                     Options (Label itemLable) query (IsActive False)
             )
+
+
+getQueryOptions : Label -> List Options -> List UrlBuilder.QueryParameter
+getQueryOptions (Label label) options =
+    let
+        option =
+            options
+                |> List.Extra.find
+                    (\(Options (Label itemLabel) params _) ->
+                        label == itemLabel
+                    )
+    in
+    case option of
+        Nothing ->
+            []
+
+        Just (Options _ params _) ->
+            List.map paramsToUrlQuery params
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -174,14 +197,17 @@ update msg model =
 
         GotNewSortBy selectedLabel ->
             let
-                activeCategory =
-                    mapSearchCategory
-                        (\label (SortBy sort) quick ->
-                            ( label, SortBy (onOptionSelected sort selectedLabel), quick )
-                        )
-                        model.activeCategory
+                (SearchCategory cLabel sortBy filters) =
+                    model.activeCategory
+
+                (SortBy options) =
+                    sortBy
+
+                _ =
+                    Debug.log "Selected options" (getQueryOptions selectedLabel options)
             in
-            ( { model | activeCategory = activeCategory }, Cmd.none )
+            getQueryOptions selectedLabel options
+                |> getNewCategorySearch model cLabel selectedLabel
 
         GotNewCategory newLabel ->
             let
@@ -192,7 +218,7 @@ update msg model =
                 ( model, Cmd.none )
 
             else
-                getNewCategorySearch model newLabel
+                getNewCategorySearch model newLabel (Label "Best match") []
 
         _ ->
             ( model, Cmd.none )
