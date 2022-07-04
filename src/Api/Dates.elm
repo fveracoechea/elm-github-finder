@@ -29,7 +29,15 @@ renderDate stringDate =
             |> Result.map (Date.format "MMMM y")
     of
         Ok date ->
-            span [ title "created on", style "font-size" ".8rem" ] [ i [ class "bi bi-calendar2-week-fill text-primary me-1", style "font-size" "1.2rem" ] [], text date ]
+            span
+                [ title "created on", style "font-size" ".8rem" ]
+                [ i
+                    [ class "bi bi-calendar2-week-fill text-primary me-1"
+                    , style "font-size" "1.2rem"
+                    ]
+                    []
+                , text date
+                ]
 
         Err _ ->
             text ""
