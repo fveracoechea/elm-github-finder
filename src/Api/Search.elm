@@ -1,6 +1,6 @@
 module Api.Search exposing (..)
 
-import Api.Decoder exposing (nullable, optional, required)
+import Api.Decoder exposing (required)
 import Api.Fetch as Api
 import Api.Profile exposing (..)
 import Api.Repository exposing (Repository, repositoryDecoder)
@@ -157,30 +157,49 @@ search itemDecoder category parameters =
         }
 
 
-searchMostPopularProfiles : Int -> Task Http.Error (SearchResults ProfileMini)
-searchMostPopularProfiles page =
-    search
-        Api.Profile.searchDecoder
-        "users"
-        [ UrlBuilder.string "q" "followers:>=0"
-        , UrlBuilder.string "sort" "followers"
-        , UrlBuilder.string "order" "desc"
-        , UrlBuilder.int "per_page" 30
-        , UrlBuilder.int "page" page
-        ]
+searchMostPopularProfiles : Int -> List UrlBuilder.QueryParameter -> Task Http.Error (SearchResults ProfileMini)
+searchMostPopularProfiles page params =
+    let
+        pageQuery =
+            [ UrlBuilder.int "per_page" 30
+            , UrlBuilder.int "page" page
+            , UrlBuilder.string "q" "followers:>=1000"
+            ]
+
+        searchQuery =
+            if List.length params > 0 then
+                params
+
+            else
+                [ UrlBuilder.string "sort" "followers"
+                , UrlBuilder.string "order" "desc"
+                ]
+    in
+    List.append searchQuery pageQuery
+        |> search Api.Profile.searchDecoder "users"
 
 
-searchMostPopularRepositories : Int -> Task Http.Error (SearchResults Repository)
-searchMostPopularRepositories page =
-    search
-        repositoryDecoder
-        "repositories"
-        [ UrlBuilder.string "q" "stars:>=0"
-        , UrlBuilder.string "sort" "stars"
-        , UrlBuilder.string "order" "desc"
-        , UrlBuilder.int "per_page" 30
-        , UrlBuilder.int "page" page
-        ]
+
+searchMostPopularRepositories : Int -> List UrlBuilder.QueryParameter -> Task Http.Error (SearchResults Repository)
+searchMostPopularRepositories page params =
+    let
+        pageQuery =
+            [ UrlBuilder.int "per_page" 30
+            , UrlBuilder.int "page" page
+            , UrlBuilder.string "q" "stars:>=1000"
+            ]
+
+        searchQuery =
+            if List.length params > 0 then
+                params
+
+            else
+                [ UrlBuilder.string "sort" "stars"
+                , UrlBuilder.string "order" "desc"
+                ]
+    in
+    List.append searchQuery pageQuery
+        |> search repositoryDecoder "repositories"
 
 
 
