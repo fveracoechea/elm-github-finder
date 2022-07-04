@@ -41,6 +41,7 @@ type Msg
     | GotNewCategory CategoryLabel
     | GotNewSortBy Label
     | GotNewQuickSearch Label
+    | GotFilterSearch Label
 
 
 
