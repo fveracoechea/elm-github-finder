@@ -255,7 +255,10 @@ renderProfile : ProfileMini -> Html Msg
 renderProfile p =
     div [ class "col-lg-4 col-md-6 mb-4" ]
         [ div [ class "card " ]
-            [ a [ Routing.href (Routing.ProfileDetail p.login) ] [ img [ src p.avatar_url, alt p.login, class "card-img-top" ] [] ]
+            [  div [ class "card-img-top profile-card-image"]
+                [ a [ Routing.href (Routing.ProfileDetail p.login) ]
+                    [ img [ src p.avatar_url, alt p.login ] [] ]
+                ]
             , div [ class "card-body d-flex justify-content-between" ]
                 [ h5 [ class "card-title text-dark" ] [ text p.login ]
                 , button [ class "btn" ] [ i [ class "bi bi-heart" ] [] ]

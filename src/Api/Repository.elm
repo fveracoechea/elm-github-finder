@@ -136,7 +136,13 @@ renderLicense : Maybe License -> Html msg
 renderLicense maybeLicense =
     case maybeLicense of
         Just license ->
-            span [ title "license", style "font-size" ".8rem" ] [ i [ class "bi bi-file-text-fill text-primary me-1", style "font-size" "1.2rem" ] [], text license.spdx_id ]
+            span
+                [ title "license", style "font-size" ".8rem" ]
+                [ i
+                    [ class "bi bi-file-text-fill text-primary me-1", style "font-size" "1.2rem" ]
+                    []
+                , text license.spdx_id
+                ]
 
         Nothing ->
             text ""
