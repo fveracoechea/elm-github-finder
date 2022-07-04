@@ -1,6 +1,6 @@
 module Page.Search exposing (Model, Msg(..), init, update, view)
 
-import Api.Profile exposing (Profile, ProfileMini)
+import Api.Profile exposing (ProfileMini)
 import Api.Repository as Repo exposing (Repository)
 import Api.Search exposing (..)
 import Browser exposing (UrlRequest(..))
@@ -69,7 +69,7 @@ init layout =
 
             else
                 ( Process.sleep 800
-                    |> Task.andThen (\_ -> searchMostPopularProfiles 1)
+                    |> Task.andThen (\_ -> searchMostPopularProfiles 1 [])
                     |> Task.attempt GotProfileSearch
                 , setActiveOptionByLabel (Label "") profiles
                 )
@@ -91,6 +91,9 @@ fetchSearch message task =
 getNewCategorySearch : Model -> CategoryLabel -> Label -> List UrlBuilder.QueryParameter -> ( Model, Cmd Msg )
 getNewCategorySearch model label optionLabel params =
     let
+        _ =
+            Debug.log "params" params
+
         query =
             List.append [ UrlBuilder.string "q" model.layout.query ] params
     in
@@ -104,7 +107,7 @@ getNewCategorySearch model label optionLabel params =
                         )
 
                     else
-                        ( repositories, searchMostPopularRepositories 1 )
+                        ( repositories, searchMostPopularRepositories 1 params )
             in
             ( { model | activeCategory = category, results = Loading }
             , fetchSearch GotRepositorySearch searchTask
@@ -119,7 +122,7 @@ getNewCategorySearch model label optionLabel params =
                         )
 
                     else
-                        ( profiles, searchMostPopularProfiles 1 )
+                        ( profiles, searchMostPopularProfiles 1 params )
             in
             ( { model | activeCategory = category, results = Loading }
             , fetchSearch GotProfileSearch searchTask
@@ -142,10 +145,13 @@ onOptionSelected options (Label label) =
 getQueryOptions : Label -> List Options -> List UrlBuilder.QueryParameter
 getQueryOptions (Label label) options =
     let
+        _ =
+            Debug.log "new sort by" label
+
         option =
             options
                 |> List.Extra.find
-                    (\(Options (Label itemLabel) params _) ->
+                    (\(Options (Label itemLabel) _ _) ->
                         label == itemLabel
                     )
     in
@@ -197,7 +203,7 @@ update msg model =
 
         GotNewSortBy selectedLabel ->
             let
-                (SearchCategory cLabel sortBy filters) =
+                (SearchCategory cLabel sortBy _) =
                     model.activeCategory
 
                 (SortBy options) =
