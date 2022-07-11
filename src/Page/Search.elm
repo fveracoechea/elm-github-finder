@@ -40,7 +40,6 @@ type Msg
     | GotRepositorySearch (Result Http.Error (SearchResults Repository))
     | GotNewCategory CategoryLabel
     | GotNewSortBy Label
-    | GotNewQuickSearch Label
     | GotFilterSearch Label
 
 
@@ -48,31 +47,79 @@ type Msg
 -- INIT
 
 
-setActiveOptionByLabel : Label -> SearchCategory -> SearchCategory
-setActiveOptionByLabel selectedLabel category =
-    mapSearchCategory
-        (\label (SortBy sort) quick ->
-            ( label, SortBy (onOptionSelected sort selectedLabel), quick )
-        )
-        category
+setActiveSortByLabel : Maybe Label -> SearchCategory -> SearchCategory
+setActiveSortByLabel maybeLabel category =
+    case maybeLabel of
+        Just sortByLabel ->
+            mapSearchCategory
+                (\categoryLabel (SortBy sort) filters ->
+                    ( categoryLabel, SortBy (onOptionSelected sort sortByLabel), filters )
+                )
+                category
+
+        Nothing ->
+            category
+
+
+setActiveFilterLabel : Maybe Label -> SearchCategory -> SearchCategory
+setActiveFilterLabel maybeLabel category =
+    let
+        (SearchCategory _ _ f) =
+            category
+
+        _ =
+            Debug.log "new filters" f
+    in
+    case maybeLabel of
+        Just filterLabel ->
+            mapSearchCategory
+                (\categoryLabel sort (Filters filters) ->
+                    ( categoryLabel, sort, Filters (onOptionSelected filters filterLabel) )
+                )
+                category
+
+        Nothing ->
+            category
+
+
+getActiveSortBy : SearchCategory -> Maybe Options
+getActiveSortBy (SearchCategory _ (SortBy options) _) =
+    options
+        |> List.Extra.find
+            (\(Options _ _ (IsActive isActive)) ->
+                isActive
+            )
+
+
+getActiveFilterLabel : SearchCategory -> Maybe Label
+getActiveFilterLabel (SearchCategory _ _ (Filters options)) =
+    options
+        |> List.Extra.find
+            (\(Options _ _ (IsActive isActive)) ->
+                isActive
+            )
+        |> Maybe.map getLabelFromOptions
 
 
 init : Layout.Model -> ( Model, Cmd Msg )
 init layout =
     let
+        defaultCategory =
+            profiles
+
         ( cmd, category ) =
             if not (String.isEmpty layout.query) then
                 ( Process.sleep 800
                     |> Task.andThen (\_ -> search Api.Profile.searchDecoder "users" [ UrlBuilder.string "q" layout.query ])
                     |> Task.attempt GotProfileSearch
-                , setActiveOptionByLabel (Label "Best match") profiles
+                , defaultCategory
                 )
 
             else
                 ( Process.sleep 800
                     |> Task.andThen (\_ -> searchMostPopularProfiles 1 [])
                     |> Task.attempt GotProfileSearch
-                , setActiveOptionByLabel (Label "") profiles
+                , defaultCategory
                 )
     in
     ( { results = Loading, layout = layout, activeCategory = category }, cmd )
@@ -82,6 +129,81 @@ init layout =
 -- UPDATE
 
 
+getSortByParams : Maybe Label -> SearchCategory -> List UrlBuilder.QueryParameter
+getSortByParams maybeLabel category =
+    let
+        (SearchCategory _ (SortBy options) _) =
+            category
+
+        getParams sortByOptions =
+            sortByOptions
+                |> getParamsFromOptions
+                |> List.map paramsToUrlQuery
+    in
+    case maybeLabel of
+        Just (Label selectedLabel) ->
+            let
+                maybeOptions =
+                    List.Extra.find
+                        (\(Options (Label label) _ _) ->
+                            selectedLabel == label
+                        )
+                        options
+            in
+            case maybeOptions of
+                Nothing ->
+                    getParams defaultSortBy
+
+                Just (Options _ params _) ->
+                    List.map paramsToUrlQuery params
+
+        Nothing ->
+            category
+                |> getActiveSortBy
+                |> Maybe.withDefault defaultSortBy
+                |> getParams
+
+
+getActiveFilterQuery : Maybe Label -> SearchCategory -> String
+getActiveFilterQuery maybeLabel (SearchCategory _ _ (Filters filters)) =
+    let
+        reduce params =
+            List.foldl reduceFiltersToString "" params
+    in
+    case maybeLabel of
+        Just (Label filterLabel) ->
+            let
+                maybeOptions =
+                    List.Extra.find
+                        (\(Options (Label label) _ _) ->
+                            filterLabel == label
+                        )
+                        filters
+            in
+            case maybeOptions of
+                Nothing ->
+                    ""
+
+                Just (Options _ params _) ->
+                    reduce params
+
+        Nothing ->
+            let
+                maybeFilter =
+                    List.Extra.find
+                        (\(Options _ _ (IsActive isActive)) ->
+                            isActive
+                        )
+                        filters
+            in
+            case maybeFilter of
+                Just (Options _ params _) ->
+                    reduce params
+
+                Nothing ->
+                    ""
+
+
 fetchSearch : (Result Http.Error (SearchResults a) -> Msg) -> Task Http.Error (SearchResults a) -> Cmd Msg
 fetchSearch message task =
     Process.sleep 800
@@ -89,44 +211,62 @@ fetchSearch message task =
         |> Task.attempt message
 
 
-getNewCategorySearch : Model -> CategoryLabel -> Label -> List UrlBuilder.QueryParameter -> ( Model, Cmd Msg )
-getNewCategorySearch model label optionLabel params =
+getNewCategorySearch : Model -> Maybe Label -> Maybe Label -> ( Model, Cmd Msg )
+getNewCategorySearch model maybeSortByLabel maybeFilterLabel =
     let
-        _ =
-            Debug.log "params" params
+        (SearchCategory categoryLabel _ _) =
+            model.activeCategory
+
+        filter =
+            getActiveFilterQuery maybeFilterLabel model.activeCategory
+
+        params : List UrlBuilder.QueryParameter
+        params =
+            getSortByParams maybeSortByLabel model.activeCategory
 
         query =
-            List.append [ UrlBuilder.string "q" model.layout.query ] params
+            model.layout.query ++ filter
+
+        queryParams =
+            List.append [ UrlBuilder.string "q" query ] params
+
+        updateActiveStates category =
+            category
+                |> setActiveFilterLabel maybeFilterLabel
+                |> setActiveSortByLabel maybeSortByLabel
+                |> Debug.log "new category"
     in
-    case label of
+    case categoryLabel of
         Repositories ->
             let
-                ( category, searchTask ) =
-                    if not (String.isEmpty model.layout.query) then
-                        ( setActiveOptionByLabel optionLabel repositories
-                        , search Repo.repositoryDecoder "repositories" query
-                        )
+                category =
+                    updateActiveStates repositories
+
+                task =
+                    if not (String.isEmpty query) then
+                        search Repo.repositoryDecoder "repositories" queryParams
 
                     else
-                        ( repositories, searchMostPopularRepositories 1 params )
+                        searchMostPopularRepositories 1 params
             in
             ( { model | activeCategory = category, results = Loading }
-            , fetchSearch GotRepositorySearch searchTask
+            , fetchSearch GotRepositorySearch task
             )
 
         _ ->
             let
-                ( category, searchTask ) =
-                    if not (String.isEmpty model.layout.query) then
-                        ( setActiveOptionByLabel optionLabel profiles
-                        , search Api.Profile.searchDecoder "users" query
-                        )
+                category =
+                    updateActiveStates profiles
+
+                task =
+                    if not (String.isEmpty query) then
+                        search Api.Profile.searchDecoder "users" queryParams
 
                     else
-                        ( profiles, searchMostPopularProfiles 1 params )
+                        searchMostPopularProfiles 1 params
             in
             ( { model | activeCategory = category, results = Loading }
-            , fetchSearch GotProfileSearch searchTask
+            , fetchSearch GotProfileSearch task
             )
 
 
@@ -141,27 +281,6 @@ onOptionSelected options (Label label) =
                 else
                     Options (Label itemLable) query (IsActive False)
             )
-
-
-getQueryOptions : Label -> List Options -> List UrlBuilder.QueryParameter
-getQueryOptions (Label label) options =
-    let
-        _ =
-            Debug.log "new sort by" label
-
-        option =
-            options
-                |> List.Extra.find
-                    (\(Options (Label itemLabel) _ _) ->
-                        label == itemLabel
-                    )
-    in
-    case option of
-        Nothing ->
-            []
-
-        Just (Options _ params _) ->
-            List.map paramsToUrlQuery params
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -191,38 +310,31 @@ update msg model =
             in
             ( { model | results = results }, Cmd.none )
 
-        GotNewQuickSearch selectedLabel ->
+        GotFilterSearch filterLabel ->
             let
-                activeCategory =
-                    mapSearchCategory
-                        (\label sortBy (Filters options) ->
-                            ( label, sortBy, Filters (onOptionSelected options selectedLabel) )
-                        )
-                        model.activeCategory
-            in
-            ( { model | activeCategory = activeCategory }, Cmd.none )
-
-        GotNewSortBy selectedLabel ->
-            let
-                (SearchCategory cLabel sortBy _) =
+                activeSortByLabel =
                     model.activeCategory
-
-                (SortBy options) =
-                    sortBy
+                        |> getActiveSortBy
+                        |> Maybe.map getLabelFromOptions
             in
-            getQueryOptions selectedLabel options
-                |> getNewCategorySearch model cLabel selectedLabel
+            getNewCategorySearch model activeSortByLabel (Just filterLabel)
 
-        GotNewCategory newLabel ->
+        GotNewSortBy sortByLabel ->
+            getNewCategorySearch model (Just sortByLabel) (getActiveFilterLabel model.activeCategory)
+
+        GotNewCategory newCategoryLabel ->
             let
-                (SearchCategory cLabel _ _) =
+                (SearchCategory currentCategoryLabel (SortBy options) filters) =
                     model.activeCategory
             in
-            if cLabel == newLabel then
+            if currentCategoryLabel == newCategoryLabel then
                 ( model, Cmd.none )
 
             else
-                getNewCategorySearch model newLabel (Label "Best match") []
+                getNewCategorySearch
+                    { model | activeCategory = SearchCategory newCategoryLabel (SortBy options) filters }
+                    Nothing
+                    Nothing
 
         _ ->
             ( model, Cmd.none )
@@ -256,7 +368,7 @@ renderProfile : ProfileMini -> Html Msg
 renderProfile p =
     div [ class "col-lg-4 col-md-6 mb-4" ]
         [ div [ class "card " ]
-            [  div [ class "card-img-top profile-card-image"]
+            [ div [ class "card-img-top profile-card-image" ]
                 [ a [ Routing.href (Routing.ProfileDetail p.login) ]
                     [ img [ src p.avatar_url, alt p.login ] [] ]
                 ]
@@ -353,7 +465,7 @@ rederFilters model =
 
         getMsg : String -> Msg
         getMsg label =
-            GotNewQuickSearch (Label label)
+            GotFilterSearch (Label label)
     in
     List.map (getOptionBtn getMsg) options
 
