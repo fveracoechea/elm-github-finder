@@ -59,6 +59,11 @@ type SearchCategory
     = SearchCategory CategoryLabel SortBy Filters
 
 
+defaultSortBy : Options
+defaultSortBy =
+    Options (Label "Best match") [] (IsActive True)
+
+
 languages : Filters
 languages =
     Filters
@@ -77,7 +82,7 @@ profiles =
     SearchCategory
         Profiles
         (SortBy
-            [ Options (Label "Best match") [] (IsActive False)
+            [ defaultSortBy
             , Options (Label "Most followers") [ Sort "followers", Order "desc" ] (IsActive False)
             , Options (Label "Most repositories") [ Sort "repositories", Order "desc" ] (IsActive False)
             , Options (Label "Most recently joined") [ Sort "joined", Order "desc" ] (IsActive False)
@@ -92,7 +97,7 @@ repositories =
     SearchCategory
         Repositories
         (SortBy
-            [ Options (Label "Best match") [] (IsActive False)
+            [ defaultSortBy
             , Options (Label "Most stars") [ Sort "stars", Order "desc" ] (IsActive False)
             , Options (Label "Most forks") [ Sort "forks", Order "desc" ] (IsActive False)
             , Options (Label "Most recently updated") [ Sort "updated", Order "desc" ] (IsActive False)
@@ -102,34 +107,12 @@ repositories =
         languages
 
 
-issues : SearchCategory
-issues =
-    SearchCategory
-        Issues
-        (SortBy
-            [ Options (Label "Best match") [] (IsActive False)
-            ]
-        )
-        (Filters [])
-
-
-discussions : SearchCategory
-discussions =
-    SearchCategory
-        Discussions
-        (SortBy
-            [ Options (Label "Best match") [] (IsActive False)
-            ]
-        )
-        (Filters [])
-
-
 wikis : SearchCategory
 wikis =
     SearchCategory
         Wikis
         (SortBy
-            [ Options (Label "Best match") [] (IsActive False)
+            [ defaultSortBy
             ]
         )
         (Filters [])
@@ -137,7 +120,7 @@ wikis =
 
 availableOptions : List SearchCategory
 availableOptions =
-    [ profiles, repositories, issues, discussions, wikis ]
+    [ profiles, repositories, wikis ]
 
 
 
@@ -179,7 +162,6 @@ searchMostPopularProfiles page params =
         |> search Api.Profile.searchDecoder "users"
 
 
-
 searchMostPopularRepositories : Int -> List UrlBuilder.QueryParameter -> Task Http.Error (SearchResults Repository)
 searchMostPopularRepositories page params =
     let
@@ -204,6 +186,26 @@ searchMostPopularRepositories page params =
 
 
 -- HELPERS
+
+
+reduceFiltersToString : Parameters -> String -> String
+reduceFiltersToString params args =
+    case params of
+        Query query ->
+            String.append args (" " ++ query)
+
+        _ ->
+            String.append args ""
+
+
+getParamsFromOptions : Options -> List Parameters
+getParamsFromOptions (Options _ params _) =
+    params
+
+
+getLabelFromOptions : Options -> Label
+getLabelFromOptions (Options label _ _) =
+    label
 
 
 paramsToUrlQuery : Parameters -> UrlBuilder.QueryParameter
