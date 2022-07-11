@@ -63,13 +63,6 @@ setActiveSortByLabel maybeLabel category =
 
 setActiveFilterLabel : Maybe Label -> SearchCategory -> SearchCategory
 setActiveFilterLabel maybeLabel category =
-    let
-        (SearchCategory _ _ f) =
-            category
-
-        _ =
-            Debug.log "new filters" f
-    in
     case maybeLabel of
         Just filterLabel ->
             mapSearchCategory
@@ -234,7 +227,6 @@ getNewCategorySearch model maybeSortByLabel maybeFilterLabel =
             category
                 |> setActiveFilterLabel maybeFilterLabel
                 |> setActiveSortByLabel maybeSortByLabel
-                |> Debug.log "new category"
     in
     case categoryLabel of
         Repositories ->
