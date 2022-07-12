@@ -1,8 +1,9 @@
 module Page.Search exposing (Model, Msg(..), init, update, view)
 
-import Api.Profile exposing (ProfileMini)
+import Api.Profile exposing (Profile, ProfileMini)
 import Api.Repository as Repo exposing (Repository)
 import Api.Search exposing (..)
+import Api.Topic as Repo exposing (Topic, renderTopicCard, topicDecoder)
 import Browser exposing (UrlRequest(..))
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -24,6 +25,7 @@ type SearchStatus
     = Loading
     | GotProfileData (SearchResults ProfileMini)
     | GotRepositoryData (SearchResults Repository)
+    | GotTopicData (SearchResults Topic)
     | Failed Http.Error
 
 
@@ -38,6 +40,7 @@ type Msg
     = Noop
     | GotProfileSearch (Result Http.Error (SearchResults ProfileMini))
     | GotRepositorySearch (Result Http.Error (SearchResults Repository))
+    | GotTopicSearch (Result Http.Error (SearchResults Topic))
     | GotNewCategory CategoryLabel
     | GotNewSortBy Label
     | GotFilterSearch Label
@@ -66,8 +69,8 @@ setActiveFilterLabel maybeLabel category =
     case maybeLabel of
         Just filterLabel ->
             mapSearchCategory
-                (\categoryLabel sort (Filters filters) ->
-                    ( categoryLabel, sort, Filters (onOptionSelected filters filterLabel) )
+                (\categoryLabel sort (Filters heading filters) ->
+                    ( categoryLabel, sort, Filters heading (onOptionSelected filters filterLabel) )
                 )
                 category
 
@@ -85,7 +88,7 @@ getActiveSortBy (SearchCategory _ (SortBy options) _) =
 
 
 getActiveFilterLabel : SearchCategory -> Maybe Label
-getActiveFilterLabel (SearchCategory _ _ (Filters options)) =
+getActiveFilterLabel (SearchCategory _ _ (Filters _ options)) =
     options
         |> List.Extra.find
             (\(Options _ _ (IsActive isActive)) ->
@@ -158,7 +161,7 @@ getSortByParams maybeLabel category =
 
 
 getActiveFilterQuery : Maybe Label -> SearchCategory -> String
-getActiveFilterQuery maybeLabel (SearchCategory _ _ (Filters filters)) =
+getActiveFilterQuery maybeLabel (SearchCategory _ _ (Filters _ filters)) =
     let
         reduce params =
             List.foldl reduceFiltersToString "" params
@@ -217,12 +220,6 @@ getNewCategorySearch model maybeSortByLabel maybeFilterLabel =
         params =
             getSortByParams maybeSortByLabel model.activeCategory
 
-        query =
-            model.layout.query ++ filter
-
-        queryParams =
-            List.append [ UrlBuilder.string "q" query ] params
-
         updateActiveStates category =
             category
                 |> setActiveFilterLabel maybeFilterLabel
@@ -231,34 +228,47 @@ getNewCategorySearch model maybeSortByLabel maybeFilterLabel =
     case categoryLabel of
         Repositories ->
             let
-                category =
-                    updateActiveStates repositories
-
-                task =
-                    if not (String.isEmpty query) then
-                        search Repo.repositoryDecoder "repositories" queryParams
+                query =
+                    if not (String.isEmpty model.layout.query) then
+                        model.layout.query
 
                     else
-                        searchMostPopularRepositories 1 params
+                        "stars:>=1000"
             in
-            ( { model | activeCategory = category, results = Loading }
-            , fetchSearch GotRepositorySearch task
+            ( { model | activeCategory = updateActiveStates repositories, results = Loading }
+            , List.append [ UrlBuilder.string "q" (query ++ filter) ] params
+                |> search Repo.repositoryDecoder "repositories"
+                |> fetchSearch GotRepositorySearch
             )
 
-        _ ->
+        Profiles ->
             let
-                category =
-                    updateActiveStates profiles
-
-                task =
-                    if not (String.isEmpty query) then
-                        search Api.Profile.searchDecoder "users" queryParams
+                query =
+                    if not (String.isEmpty model.layout.query) then
+                        model.layout.query
 
                     else
-                        searchMostPopularProfiles 1 params
+                        "followers:>=1000"
             in
-            ( { model | activeCategory = category, results = Loading }
-            , fetchSearch GotProfileSearch task
+            ( { model | activeCategory = updateActiveStates profiles, results = Loading }
+            , List.append [ UrlBuilder.string "q" (query ++ filter) ] params
+                |> search Api.Profile.searchDecoder "users"
+                |> fetchSearch GotProfileSearch
+            )
+
+        Topics ->
+            let
+                query =
+                    if not (String.isEmpty model.layout.query) then
+                        model.layout.query
+
+                    else
+                        "is:featured"
+            in
+            ( { model | activeCategory = updateActiveStates topics, results = Loading }
+            , List.append [ UrlBuilder.string "q" (query ++ filter) ] params
+                |> search topicDecoder "topics"
+                |> fetchSearch GotTopicSearch
             )
 
 
@@ -299,6 +309,18 @@ update msg model =
 
                         Ok data ->
                             GotProfileData data
+            in
+            ( { model | results = results }, Cmd.none )
+
+        GotTopicSearch result ->
+            let
+                results =
+                    case result of
+                        Err reason ->
+                            Failed reason
+
+                        Ok data ->
+                            GotTopicData data
             in
             ( { model | results = results }, Cmd.none )
 
@@ -396,6 +418,9 @@ renderResults model =
         GotRepositoryData results ->
             List.map (Repo.renderCard 12 True) results.items
 
+        GotTopicData results ->
+            List.map renderTopicCard results.items
+
         _ ->
             []
 
@@ -452,7 +477,7 @@ renderSortByOptions model =
 rederFilters : Model -> List (Html Msg)
 rederFilters model =
     let
-        (SearchCategory _ _ (Filters options)) =
+        (SearchCategory _ _ (Filters _ options)) =
             model.activeCategory
 
         getMsg : String -> Msg
@@ -460,6 +485,15 @@ rederFilters model =
             GotFilterSearch (Label label)
     in
     List.map (getOptionBtn getMsg) options
+
+
+getFilterHeading : Model -> String
+getFilterHeading model =
+    let
+        (SearchCategory _ _ (Filters heading _)) =
+            model.activeCategory
+    in
+    heading ++ ": "
 
 
 renderSidebarBtn : Model -> List (Html Msg)
@@ -477,31 +511,53 @@ renderSidebarBtn model =
 
 renderHeading : Model -> List (Html Msg)
 renderHeading model =
+    let
+        total total_count =
+            total_count
+                |> String.fromInt
+                |> formatNumber
+                |> text
+    in
     case model.results of
         GotProfileData data ->
             [ text "Showing "
-            , b []
-                [ data.total_count
-                    |> String.fromInt
-                    |> formatNumber
-                    |> text
-                ]
+            , b [] [ total data.total_count ]
             , text " profiles:"
             ]
 
         GotRepositoryData data ->
             [ text "Showing "
-            , b []
-                [ data.total_count
-                    |> String.fromInt
-                    |> formatNumber
-                    |> text
-                ]
+            , b [] [ total data.total_count ]
             , text " repository results:"
+            ]
+
+        GotTopicData data ->
+            [ text "Showing "
+            , b [] [ total data.total_count ]
+            , text " topics:"
             ]
 
         _ ->
             [ text "Loading... " ]
+
+
+renderSortBySidebar : Model -> List (Html Msg)
+renderSortBySidebar model =
+    let
+        shared =
+            [ h6 [ class "mt-4" ] [ text "Sort options:" ]
+            , div [ class "list-group" ] (renderSortByOptions model)
+            ]
+    in
+    case model.activeCategory of
+        SearchCategory Profiles _ _ ->
+            shared
+
+        SearchCategory Repositories _ _ ->
+            shared
+
+        _ ->
+            []
 
 
 view : Model -> Html Msg
@@ -509,12 +565,13 @@ view model =
     div [ class "row pt-4" ]
         [ div [ class "col-lg-3 col-md-4" ]
             [ div [ class "sticky-sm-top mb-4", style "top" "20px" ]
-                [ div [ class "list-group" ] (renderSidebarBtn model)
-                , h6 [ class "mt-4" ] [ text "Languages:" ]
-                , div [ class "list-group" ] (rederFilters model)
-                , h6 [ class "mt-4" ] [ text "Sort options:" ]
-                , div [ class "list-group" ] (renderSortByOptions model)
-                ]
+                (List.append
+                    [ div [ class "list-group" ] (renderSidebarBtn model)
+                    , h6 [ class "mt-4" ] [ text (getFilterHeading model) ]
+                    , div [ class "list-group" ] (rederFilters model)
+                    ]
+                    (renderSortBySidebar model)
+                )
             ]
         , div [ class "col-lg-9 col-md-8" ]
             [ h2 [ class "lead border-1 border-bottom fs-3 pb-2 border-dark" ] (renderHeading model)
