@@ -4,6 +4,7 @@ import Api.Decoder exposing (required)
 import Api.Fetch as Api
 import Api.Profile exposing (..)
 import Api.Repository exposing (Repository, repositoryDecoder)
+import Api.Topic exposing (..)
 import Http
 import Json.Decode as D
 import Task exposing (Task)
@@ -27,9 +28,7 @@ type Label
 type CategoryLabel
     = Repositories
     | Profiles
-    | Issues
-    | Discussions
-    | Wikis
+    | Topics
 
 
 type Parameters
@@ -52,7 +51,7 @@ type SortBy
 
 
 type Filters
-    = Filters (List Options)
+    = Filters String (List Options)
 
 
 type SearchCategory
@@ -67,6 +66,7 @@ defaultSortBy =
 languages : Filters
 languages =
     Filters
+        "Languages"
         [ Options (Label "Elm") [ Query "language:elm" ] (IsActive False)
         , Options (Label "JavaScript") [ Query "language:javascript" ] (IsActive False)
         , Options (Label "TypeScript") [ Query "language:typescript" ] (IsActive False)
@@ -74,6 +74,18 @@ languages =
         , Options (Label "PHP") [ Query "language:php" ] (IsActive False)
         , Options (Label "Java") [ Query "language:java" ] (IsActive False)
         , Options (Label "C#") [ Query "language:c#" ] (IsActive False)
+        ]
+
+
+qualifiers : Filters
+qualifiers =
+    Filters
+        "Filters"
+        [ Options (Label "Featured") [ Query "is:featured" ] (IsActive True)
+        , Options (Label "Curated") [ Query "is:curated" ] (IsActive False)
+        , Options (Label "More than 5000 repositories") [ Query "repositories:>5000" ] (IsActive False)
+        , Options (Label "More than 2500 repositories") [ Query "repositories:>2500" ] (IsActive False)
+        , Options (Label "More than 1000 repositories") [ Query "repositories:>1000" ] (IsActive False)
         ]
 
 
@@ -107,20 +119,21 @@ repositories =
         languages
 
 
-wikis : SearchCategory
-wikis =
+topics : SearchCategory
+topics =
     SearchCategory
-        Wikis
+        Topics
         (SortBy
-            [ defaultSortBy
+            [ Options (Label "Most recently updated") [ Sort "updated", Order "desc" ] (IsActive False)
+            , Options (Label "Last recently updated") [ Sort "updated", Order "asc" ] (IsActive False)
             ]
         )
-        (Filters [])
+        qualifiers
 
 
 availableOptions : List SearchCategory
 availableOptions =
-    [ profiles, repositories, wikis ]
+    [ profiles, repositories, topics ]
 
 
 
@@ -138,6 +151,18 @@ search itemDecoder category parameters =
         , body = Nothing
         , method = Api.methods.get
         }
+
+
+searchTopicByName : Int -> List UrlBuilder.QueryParameter -> Task Http.Error (SearchResults Topic)
+searchTopicByName perPage params =
+    let
+        query =
+            List.append
+                params
+                [ UrlBuilder.int "per_page" perPage
+                ]
+    in
+    search Api.Topic.topicDecoder "topics" query
 
 
 searchMostPopularProfiles : Int -> List UrlBuilder.QueryParameter -> Task Http.Error (SearchResults ProfileMini)
@@ -233,14 +258,8 @@ getCategoryName label =
         Repositories ->
             "Repositories"
 
-        Issues ->
-            "Issues"
-
-        Discussions ->
-            "Discussions"
-
-        Wikis ->
-            "Wikis"
+        Topics ->
+            "Topics"
 
 
 mapSearchCategory :
