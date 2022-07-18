@@ -1,11 +1,11 @@
 module Api.Topic exposing (..)
 
-import Api.Decoder exposing (nullable, optional, required)
+import Api.Decoder exposing (nullable, required)
 import Api.Fetch as Api
 import Html exposing (..)
-import Html.Attributes exposing (class, style, title)
+import Html.Attributes exposing (class)
 import Json.Decode as D exposing (Decoder)
-import Task exposing (Task)
+import Layout exposing (Msg)
 
 
 
@@ -49,15 +49,33 @@ topicDecoder =
 -- HTML HELPERS
 
 
+renderTag : Bool -> String -> Html msg
+renderTag boolean value =
+    let
+        html =
+            if boolean then
+                text (value ++ " ")
+
+            else
+                text ""
+    in
+    span [] [ html ]
+
+
 renderTopicCard : Topic -> Html msg
 renderTopicCard topic =
     div [ class "col-lg-6 col-md-12" ]
         [ div [ class "card mb-4" ]
             [ div [ class "card-body" ]
-                [ div [ class "d-flex justify-content-between" ]
+                [ div []
                     [ h5
                         [ class "card-title text-secondary" ]
                         [ text topic.display_name ]
+                    , p [] [ text topic.short_description ]
+                    , small []
+                        [ renderTag topic.featured "featured"
+                        , renderTag topic.curated "curated"
+                        ]
                     ]
                 ]
             ]
