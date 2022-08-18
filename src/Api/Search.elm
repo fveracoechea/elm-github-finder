@@ -169,7 +169,7 @@ searchMostPopularProfiles : Int -> List UrlBuilder.QueryParameter -> Task Http.E
 searchMostPopularProfiles page params =
     let
         pageQuery =
-            [ UrlBuilder.int "per_page" 30
+            [ UrlBuilder.int "per_page" 60
             , UrlBuilder.int "page" page
             , UrlBuilder.string "q" "followers:>=1000"
             ]
@@ -185,28 +185,6 @@ searchMostPopularProfiles page params =
     in
     List.append searchQuery pageQuery
         |> search Api.Profile.searchDecoder "users"
-
-
-searchMostPopularRepositories : Int -> List UrlBuilder.QueryParameter -> Task Http.Error (SearchResults Repository)
-searchMostPopularRepositories page params =
-    let
-        pageQuery =
-            [ UrlBuilder.int "per_page" 30
-            , UrlBuilder.int "page" page
-            , UrlBuilder.string "q" "stars:>=1000"
-            ]
-
-        searchQuery =
-            if List.length params > 0 then
-                params
-
-            else
-                [ UrlBuilder.string "sort" "stars"
-                , UrlBuilder.string "order" "desc"
-                ]
-    in
-    List.append searchQuery pageQuery
-        |> search repositoryDecoder "repositories"
 
 
 

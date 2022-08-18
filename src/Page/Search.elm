@@ -219,6 +219,7 @@ getNewCategorySearch model maybeSortByLabel maybeFilterLabel =
         params : List UrlBuilder.QueryParameter
         params =
             getSortByParams maybeSortByLabel model.activeCategory
+                |> List.append [ UrlBuilder.int "per_page" 60 ]
 
         updateActiveStates category =
             category
@@ -511,30 +512,17 @@ renderSidebarBtn model =
 
 renderHeading : Model -> List (Html Msg)
 renderHeading model =
-    let
-        total total_count =
-            total_count
-                |> String.fromInt
-                |> formatNumber
-                |> text
-    in
     case model.results of
-        GotProfileData data ->
-            [ text "Showing "
-            , b [] [ total data.total_count ]
-            , text " profiles:"
+        GotProfileData _ ->
+            [ text "Profiles:"
             ]
 
-        GotRepositoryData data ->
-            [ text "Showing "
-            , b [] [ total data.total_count ]
-            , text " repository results:"
+        GotRepositoryData _ ->
+            [ text "Repositories:"
             ]
 
-        GotTopicData data ->
-            [ text "Showing "
-            , b [] [ total data.total_count ]
-            , text " topics:"
+        GotTopicData _ ->
+            [ text "Topics:"
             ]
 
         _ ->
@@ -564,7 +552,7 @@ view : Model -> Html Msg
 view model =
     div [ class "row pt-4" ]
         [ div [ class "col-lg-3 col-md-4" ]
-            [ div [ class "sticky-sm-top mb-4", style "top" "20px" ]
+            [ div [ class "sticky-sm-top mb-4", style "top" "84px" ]
                 (List.append
                     [ div [ class "list-group" ] (renderSidebarBtn model)
                     , h6 [ class "mt-4" ] [ text (getFilterHeading model) ]
@@ -574,61 +562,9 @@ view model =
                 )
             ]
         , div [ class "col-lg-9 col-md-8" ]
-            [ h2 [ class "lead border-1 border-bottom fs-3 pb-2 border-dark" ] (renderHeading model)
-            , div [ class "sticky-sm-top", style "top" "0", style "background-color" "#f2f2f2", style "padding-top" "20px" ]
-                [ div [ class "d-flex justify-content-end" ]
-                    [ nav [ attribute "aria-label" "Page navigation example" ]
-                        [ ul [ class "pagination" ]
-                            [ li [ class "page-item" ]
-                                [ a [ attribute "aria-label" "Previous", class "page-link", href "#" ]
-                                    [ span [ attribute "aria-hidden" "true" ]
-                                        [ i [ class "bi bi-chevron-double-left" ] [] ]
-                                    ]
-                                ]
-                            , li [ class "page-item" ]
-                                [ a [ attribute "aria-label" "Previous", class "page-link", href "#" ]
-                                    [ span [ attribute "aria-hidden" "true" ]
-                                        [ text "1" ]
-                                    ]
-                                ]
-                            , li [ class "page-item disabled" ]
-                                [ a [ class "page-link", href "#" ]
-                                    [ text "..." ]
-                                ]
-                            , li [ class "page-item" ]
-                                [ a [ class "page-link", href "#" ]
-                                    [ text "3" ]
-                                ]
-                            , li [ class "page-item active" ]
-                                [ a [ class "page-link", href "#" ]
-                                    [ text "4" ]
-                                ]
-                            , li [ class "page-item" ]
-                                [ a [ class "page-link", href "#" ]
-                                    [ text "5" ]
-                                ]
-                            , li [ class "page-item disabled" ]
-                                [ a [ attribute "aria-label" "Next", class "page-link", href "#" ]
-                                    [ span [ attribute "aria-hidden" "true" ]
-                                        [ text "..." ]
-                                    ]
-                                ]
-                            , li [ class "page-item" ]
-                                [ a [ attribute "aria-label" "Next", class "page-link", href "#" ]
-                                    [ span [ attribute "aria-hidden" "true" ]
-                                        [ text "12" ]
-                                    ]
-                                ]
-                            , li [ class "page-item" ]
-                                [ a [ attribute "aria-label" "Next", class "page-link", href "#" ]
-                                    [ span [ attribute "aria-hidden" "true" ]
-                                        [ i [ class "bi bi-chevron-double-right" ] [] ]
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            , div [ class "row" ] (renderResults model)
+            [ h2
+                [ class "lead border-1 border-bottom fs-3 pb-1 border-dark" ]
+                (renderHeading model)
+            , div [ class "row pt-2" ] (renderResults model)
             ]
         ]
