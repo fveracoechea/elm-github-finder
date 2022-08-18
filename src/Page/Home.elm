@@ -39,7 +39,7 @@ view _ =
                         , type_ "submit"
                         , attribute "aria-label" "submit search"
                         , style "min-width" "8rem"
-                        , Routing.href Routing.Search
+                        , Routing.href (Routing.Search Nothing Nothing)
                         ]
                         [ text "SEARCH NOW!" ]
                     ]

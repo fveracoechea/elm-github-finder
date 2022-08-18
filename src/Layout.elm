@@ -1,4 +1,4 @@
-module Layout exposing (Model, Msg(..), footer, header, init, subscriptions, update)
+module Layout exposing (Model, Msg(..), SearchEntity(..), footer, header, init, subscriptions, update)
 
 import Browser.Events exposing (onResize)
 import Browser.Navigation as Navigation
@@ -28,19 +28,19 @@ navID =
     "header-navigation"
 
 
-type alias NavigationHeight =
-    { initial : Int
-    , current : Int
-    }
+type SearchEntity
+    = Repository
+    | Profile
+    | Topic
 
 
 type alias Model =
     { isMobile : Bool
     , isNavOpen : Bool
     , query : String
+    , searchEntity : Maybe SearchEntity
     , navKey : Navigation.Key
     , activeRoute : Routing.Route
-    , navigation : NavigationHeight
     }
 
 
@@ -51,14 +51,11 @@ type alias Model =
 init : Navigation.Key -> Model
 init key =
     { isMobile = True
-    , isNavOpen = True
+    , isNavOpen = False
     , query = ""
+    , searchEntity = Nothing
     , navKey = key
     , activeRoute = Routing.Home
-    , navigation =
-        { initial = 140
-        , current = 0
-        }
     }
 
 
@@ -78,40 +75,35 @@ update msg model =
             )
 
         MobileNavToggled ->
-            let
-                current =
-                    model.navigation.current
-
-                initial =
-                    model.navigation.initial
-
-                isNavOpen =
-                    not model.isNavOpen
-            in
-            if not model.isNavOpen && current > 0 then
-                let
-                    nav =
-                        { initial = initial
-                        , current = 0
-                        }
-                in
-                ( { model | navigation = nav, isNavOpen = isNavOpen }, Cmd.none )
-
-            else if model.isNavOpen && current < initial then
-                let
-                    nav =
-                        { initial = initial
-                        , current = initial
-                        }
-                in
-                ( { model | navigation = nav, isNavOpen = isNavOpen }, Cmd.none )
-
-            else
-                ( { model | isNavOpen = isNavOpen }, Cmd.none )
+            ( { model | isNavOpen = not model.isNavOpen }, Cmd.none )
 
         GotSearchRequest ->
+            let
+                entity =
+                    case model.searchEntity of
+                        Just value ->
+                            case value of
+                                Profile ->
+                                    Just "profile"
+
+                                Repository ->
+                                    Just "repository"
+
+                                Topic ->
+                                    Just "topic"
+
+                        Nothing ->
+                            Just "profile"
+
+                query =
+                    if String.isEmpty model.query then
+                        Nothing
+
+                    else
+                        Just model.query
+            in
             ( model
-            , Routing.Search
+            , Routing.Search query entity
                 |> Routing.routeToString
                 |> Navigation.pushUrl model.navKey
             )
@@ -121,33 +113,36 @@ update msg model =
 -- VIEW
 
 
-getNavHeight : Model -> Attribute msg
-getNavHeight model =
-    if model.isMobile then
-        style "height" (String.fromInt model.navigation.current ++ "px")
+setActiveNavbar : String -> Model -> Attribute msg
+setActiveNavbar baseClasses model =
+    if model.isNavOpen then
+        class <| baseClasses ++ " active"
 
     else
-        style "height" "auto"
+        class baseClasses
 
 
 header : Model -> Html Msg
 header model =
     Html.header []
-        [ nav [ class "navbar navbar-expand-lg navbar-dark bg-dark" ]
+        [ div [ setActiveNavbar "backdrop" model, onClick MobileNavToggled ] []
+        , nav [ class "navbar navbar-expand-lg navbar-dark bg-dark fixed-top" ]
             [ div [ class "container" ]
                 [ a [ class "navbar-brand", Routing.href Routing.Home ]
                     [ i [ class "bi bi-github", style "margin-right" "10px", style "font-size" "1.43rem" ]
                         []
                     , text "Github Finder"
                     ]
-                , button [ onClick MobileNavToggled, class "navbar-toggler", type_ "button" ] [ span [ class "navbar-toggler-icon" ] [] ]
-                , div [ class "collapse navbar-collapse justify-content-between", id navID, getNavHeight model ]
+                , button
+                    [ onClick MobileNavToggled, class "navbar-toggler", type_ "button" ]
+                    [ span [ class "navbar-toggler-icon" ] [] ]
+                , div [ id navID, setActiveNavbar "collapse navbar-collapse justify-content-between" model ]
                     [ ul [ class "navbar-nav" ]
                         [ li [ class "nav-item" ]
                             [ a
                                 [ class "nav-link"
-                                , Routing.href Routing.Search
-                                , Routing.isActiveLink Routing.Search model.activeRoute
+                                , Routing.href (Routing.Search Nothing Nothing)
+                                , Routing.isActiveLink (Routing.Search Nothing Nothing) model.activeRoute
                                 ]
                                 [ i [ class "bi bi-search me-2" ] []
                                 , text "Search"
@@ -212,7 +207,7 @@ footer _ =
                     ]
                 , div [ class "col-md-2 mb-3" ]
                     [ h6 [ class "text-uppercase" ]
-                        [ a [ Routing.href Routing.Search ]
+                        [ a [ Routing.href (Routing.Search Nothing Nothing) ]
                             [ text "Search" ]
                         ]
                     ]

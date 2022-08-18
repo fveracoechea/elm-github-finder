@@ -155,7 +155,7 @@ renderBreadcrumbs profile =
                 [ a [ Routing.href Routing.Home ] [ text "Home" ]
                 ]
             , li [ class "breadcrumb-item" ]
-                [ a [ Routing.href Routing.Search ] [ text "Search" ]
+                [ a [ Routing.href (Routing.Search Nothing Nothing) ] [ text "Search" ]
                 ]
             , li [ attribute "aria-current" "page", class "breadcrumb-item active" ]
                 [ text profile.login ]
