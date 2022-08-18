@@ -72,8 +72,8 @@ mapToPage route layout =
                     ProfileDetailPage.init username { layout | activeRoute = Routing.ProfileDetail username }
                         |> updateWith ProfileDetail GotProfileDetailPageMsg
 
-                Routing.Search ->
-                    SearchPage.init { layout | activeRoute = Routing.Search }
+                Routing.Search query entity ->
+                    SearchPage.init { layout | activeRoute = Routing.Search query entity }
                         |> updateWith Search GotSearchPageMsg
 
                 Routing.Favorites ->
@@ -182,7 +182,7 @@ view model =
     { title = "Github Finder"
     , body =
         [ renderLayout model Layout.header
-        , div [ style "min-height" "20vh", style "background-color" "#f2f2f2", style "position" "relative" ]
+        , div [ style "background-color" "#f2f2f2", style "position" "relative", style "padding-top" "60px" ]
             [ case model of
                 Home _ ->
                     main_ [ class "container-fluid p-0" ]
