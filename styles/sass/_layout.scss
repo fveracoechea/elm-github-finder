@@ -18,14 +18,43 @@ footer {
     }
 }
 
-#header-navigation {
+header {
+    .backdrop {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0,0,0,0.4);
+        z-index: 1020;
+        display: none;
 
-    @media (max-width: 991px) {
-        transition: height 0.6s ease 0s;
-        display: block;
+        &.active {
+            display: block;
+        }
+    }
 
-        ul li:last-child {
-            margin-bottom: 8px;
+    #header-navigation {
+
+        &.active {
+            transform: scaleY(1);
+        }
+
+        @media (max-width: 991px) {
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform 0.4s ease 0s;
+            display: block;
+            position: fixed;
+            top: 60px;
+            width: 100%;
+            left: 0;
+            background-color: rgba(var(--gf-dark-rgb), var(--gf-bg-opacity));
+            padding-right: calc(var(--gf-gutter-x) * 0.5);
+            padding-left: calc(var(--gf-gutter-x) * 0.5);
+            padding-bottom: 20px;
+            ul li:last-child {
+                margin-bottom: 8px;
+            }
         }
     }
 }
+
+
