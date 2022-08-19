@@ -1,4 +1,4 @@
-module Layout exposing (Model, Msg(..), SearchEntity(..), footer, header, init, subscriptions, update)
+module Layout exposing (Model, Msg(..), SearchEntity(..), footer, getSearchEntityFromQuery, header, init, subscriptions, update)
 
 import Browser.Events exposing (onResize)
 import Browser.Navigation as Navigation
@@ -6,6 +6,22 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Routing
+
+
+getSearchEntityFromQuery : Maybe String -> SearchEntity
+getSearchEntityFromQuery maybeEntity =
+    case Maybe.withDefault "profile" maybeEntity of
+        "profile" ->
+            Profile
+
+        "repository" ->
+            Repository
+
+        "topic" ->
+            Topic
+
+        _ ->
+            Profile
 
 
 
@@ -38,7 +54,7 @@ type alias Model =
     { isMobile : Bool
     , isNavOpen : Bool
     , query : String
-    , searchEntity : Maybe SearchEntity
+    , searchEntity : SearchEntity
     , navKey : Navigation.Key
     , activeRoute : Routing.Route
     }
@@ -53,7 +69,7 @@ init key =
     { isMobile = True
     , isNavOpen = False
     , query = ""
-    , searchEntity = Nothing
+    , searchEntity = Profile
     , navKey = key
     , activeRoute = Routing.Home
     }
@@ -81,19 +97,14 @@ update msg model =
             let
                 entity =
                     case model.searchEntity of
-                        Just value ->
-                            case value of
-                                Profile ->
-                                    Just "profile"
-
-                                Repository ->
-                                    Just "repository"
-
-                                Topic ->
-                                    Just "topic"
-
-                        Nothing ->
+                        Profile ->
                             Just "profile"
+
+                        Repository ->
+                            Just "repository"
+
+                        Topic ->
+                            Just "topic"
 
                 query =
                     if String.isEmpty model.query then

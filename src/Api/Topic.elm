@@ -5,7 +5,6 @@ import Api.Fetch as Api
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Json.Decode as D exposing (Decoder)
-import Layout exposing (Msg)
 
 
 
