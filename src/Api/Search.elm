@@ -3,7 +3,6 @@ module Api.Search exposing (..)
 import Api.Decoder exposing (required)
 import Api.Fetch as Api
 import Api.Profile exposing (..)
-import Api.Repository exposing (Repository, repositoryDecoder)
 import Api.Topic exposing (..)
 import Http
 import Json.Decode as D
@@ -238,6 +237,31 @@ getCategoryName label =
 
         Topics ->
             "Topics"
+
+
+getCategoryUrl : Maybe String -> CategoryLabel -> String
+getCategoryUrl maybeQuery label =
+    let
+        query =
+            case maybeQuery of
+                Just q ->
+                    [ UrlBuilder.string "query" q ]
+
+                Nothing ->
+                    []
+
+        build =
+            UrlBuilder.absolute [ "search" ]
+    in
+    case label of
+        Profiles ->
+            build (List.append [ UrlBuilder.string "entity" "profile" ] query)
+
+        Repositories ->
+            build (List.append [ UrlBuilder.string "entity" "repository" ] query)
+
+        Topics ->
+            build (List.append [ UrlBuilder.string "entity" "topic" ] query)
 
 
 mapSearchCategory :

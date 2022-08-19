@@ -1,6 +1,6 @@
 module Page.Search exposing (Model, Msg(..), init, update, view)
 
-import Api.Profile exposing (Profile, ProfileMini)
+import Api.Profile exposing (ProfileMini)
 import Api.Repository as Repo exposing (Repository)
 import Api.Search exposing (..)
 import Api.Topic as Repo exposing (Topic, renderTopicCard, topicDecoder)
@@ -15,6 +15,7 @@ import Process
 import Routing
 import Task exposing (Task)
 import Url.Builder as UrlBuilder
+import Url.Parser exposing (query)
 
 
 
@@ -41,7 +42,6 @@ type Msg
     | GotProfileSearch (Result Http.Error (SearchResults ProfileMini))
     | GotRepositorySearch (Result Http.Error (SearchResults Repository))
     | GotTopicSearch (Result Http.Error (SearchResults Topic))
-    | GotNewCategory CategoryLabel
     | GotNewSortBy Label
     | GotFilterSearch Label
 
@@ -99,26 +99,22 @@ getActiveFilterLabel (SearchCategory _ _ (Filters _ options)) =
 
 init : Layout.Model -> ( Model, Cmd Msg )
 init layout =
-    let
-        defaultCategory =
-            profiles
+    getNewCategorySearch
+        { results = Loading
+        , layout = layout
+        , activeCategory =
+            case layout.searchEntity of
+                Layout.Profile ->
+                    profiles
 
-        ( cmd, category ) =
-            if not (String.isEmpty layout.query) then
-                ( Process.sleep 800
-                    |> Task.andThen (\_ -> search Api.Profile.searchDecoder "users" [ UrlBuilder.string "q" layout.query ])
-                    |> Task.attempt GotProfileSearch
-                , defaultCategory
-                )
+                Layout.Repository ->
+                    repositories
 
-            else
-                ( Process.sleep 800
-                    |> Task.andThen (\_ -> searchMostPopularProfiles 1 [])
-                    |> Task.attempt GotProfileSearch
-                , defaultCategory
-                )
-    in
-    ( { results = Loading, layout = layout, activeCategory = category }, cmd )
+                Layout.Topic ->
+                    topics
+        }
+        Nothing
+        Nothing
 
 
 
@@ -337,46 +333,12 @@ update msg model =
         GotNewSortBy sortByLabel ->
             getNewCategorySearch model (Just sortByLabel) (getActiveFilterLabel model.activeCategory)
 
-        GotNewCategory newCategoryLabel ->
-            let
-                (SearchCategory currentCategoryLabel (SortBy options) filters) =
-                    model.activeCategory
-            in
-            if currentCategoryLabel == newCategoryLabel then
-                ( model, Cmd.none )
-
-            else
-                getNewCategorySearch
-                    { model | activeCategory = SearchCategory newCategoryLabel (SortBy options) filters }
-                    Nothing
-                    Nothing
-
         _ ->
             ( model, Cmd.none )
 
 
 
 --VIEW
-
-
-formatNumber : String -> String
-formatNumber integers =
-    let
-        reversedSplitThousands : String -> List String
-        reversedSplitThousands value =
-            if String.length value > 3 then
-                value
-                    |> String.dropRight 3
-                    |> reversedSplitThousands
-                    |> (::) (String.right 3 value)
-
-            else
-                [ value ]
-    in
-    integers
-        |> reversedSplitThousands
-        |> List.reverse
-        |> String.join ","
 
 
 renderProfile : ProfileMini -> Html Msg
@@ -426,8 +388,8 @@ renderResults model =
             []
 
 
-getCategoryBtn : CategoryLabel -> Bool -> Html Msg
-getCategoryBtn label isActive =
+getCategoryBtn : String -> CategoryLabel -> Bool -> Html Msg
+getCategoryBtn query label isActive =
     let
         className =
             "list-group-item list-group-item-action list-group-item-primary"
@@ -438,10 +400,17 @@ getCategoryBtn label isActive =
 
             else
                 className
+
+        q =
+            if not (String.isEmpty query) then
+                Just query
+
+            else
+                Nothing
     in
-    button
+    a
         [ class classes
-        , onClick (GotNewCategory label)
+        , href (getCategoryUrl q label)
         ]
         [ text (getCategoryName label) ]
 
@@ -506,7 +475,7 @@ renderSidebarBtn model =
     availableOptions
         |> List.map
             (\(SearchCategory label _ _) ->
-                getCategoryBtn label (currentLabel == label)
+                getCategoryBtn model.layout.query label (currentLabel == label)
             )
 
 

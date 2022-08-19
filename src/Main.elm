@@ -73,7 +73,11 @@ mapToPage route layout =
                         |> updateWith ProfileDetail GotProfileDetailPageMsg
 
                 Routing.Search query entity ->
-                    SearchPage.init { layout | activeRoute = Routing.Search query entity }
+                    SearchPage.init
+                        { layout
+                            | activeRoute = Routing.Search query entity
+                            , searchEntity = Layout.getSearchEntityFromQuery entity
+                        }
                         |> updateWith Search GotSearchPageMsg
 
                 Routing.Favorites ->
