@@ -4,7 +4,7 @@ import Api.Dates as ApiDate
 import Api.Decoder exposing (nullable, optional, required)
 import Api.Fetch as Api
 import Html exposing (..)
-import Html.Attributes exposing (class, style, title)
+import Html.Attributes exposing (class, href, style, target, title)
 import Http
 import Json.Decode as D exposing (Decoder)
 import Platform exposing (Task)
@@ -139,7 +139,7 @@ renderLicense maybeLicense =
             span
                 [ title "license", style "font-size" ".8rem" ]
                 [ i
-                    [ class "bi bi-file-text-fill text-primary me-1", style "font-size" "1.2rem" ]
+                    [ class "bi bi-file-text-fill text-dark me-2", style "font-size" "1.2rem" ]
                     []
                 , text license.spdx_id
                 ]
@@ -164,7 +164,9 @@ renderCard cols useFullname repo =
                 [ div [ class "d-flex justify-content-between" ]
                     [ h5
                         [ class "card-title text-secondary" ]
-                        [ text title ]
+                        [ a [ href repo.html_url, target "_blank" ]
+                            [ text title ]
+                        ]
                     , repo.language
                         |> Maybe.map getLanguageBadge
                         |> Maybe.withDefault (text "")
