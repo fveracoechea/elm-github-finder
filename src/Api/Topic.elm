@@ -3,7 +3,7 @@ module Api.Topic exposing (..)
 import Api.Decoder exposing (nullable, required)
 import Api.Fetch as Api
 import Html exposing (..)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (class, href, target)
 import Json.Decode as D exposing (Decoder)
 
 
@@ -48,17 +48,13 @@ topicDecoder =
 -- HTML HELPERS
 
 
-renderTag : Bool -> String -> Html msg
-renderTag boolean value =
-    let
-        html =
-            if boolean then
-                text (value ++ " ")
+renderTag : Bool -> String -> String -> Html msg
+renderTag boolean value classNames =
+    if boolean then
+        span [ class "me-4" ] [ i [ class classNames ] [], text value ]
 
-            else
-                text ""
-    in
-    span [] [ html ]
+    else
+        text ""
 
 
 renderTopicCard : Topic -> Html msg
@@ -69,11 +65,13 @@ renderTopicCard topic =
                 [ div []
                     [ h5
                         [ class "card-title text-secondary" ]
-                        [ text topic.display_name ]
+                        [ a [ href <| "https://github.com/topics/" ++ topic.name, target "_blank" ]
+                            [ text topic.display_name ]
+                        ]
                     , p [] [ text topic.short_description ]
                     , small []
-                        [ renderTag topic.featured "featured"
-                        , renderTag topic.curated "curated"
+                        [ renderTag topic.featured "featured" "bi bi-star-fill text-primary me-2"
+                        , renderTag topic.curated "curated" "bi bi-check-square-fill text-success me-2"
                         ]
                     ]
                 ]
