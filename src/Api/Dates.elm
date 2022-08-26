@@ -32,7 +32,7 @@ renderDate stringDate =
             span
                 [ title "created on", style "font-size" ".8rem" ]
                 [ i
-                    [ class "bi bi-calendar2-week-fill text-primary me-1"
+                    [ class "bi bi-calendar2-week-fill text-warning me-2"
                     , style "font-size" "1.2rem"
                     ]
                     []
